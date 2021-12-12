@@ -8,7 +8,7 @@ from pdrl.torch.ddpg.network import ActorCritic
 
 
 class DDPGAgent(Agent):
-    def __init__(self, observation_space, action_space, gamma, actor_lr, critic_lr, polyak, logger):
+    def __init__(self, observation_space, action_space, gamma, actor_lr, critic_lr, polyak, l2_action, logger):
         self.gamma = gamma
         self.actor_critic = ActorCritic(observation_space, action_space)
         self.target_ac = copy.deepcopy(self.actor_critic)
@@ -16,21 +16,24 @@ class DDPGAgent(Agent):
         self.critic_optimizer = Adam(self.actor_critic.critic.parameters(), lr=critic_lr)
         self.polyak = polyak
         self.act_dim = action_space.shape[0]
+        self.max_act = torch.Tensor(action_space.high)
         self.logger = logger
+        self.l2_action = l2_action
 
     def act(self, observation, noise_scale):
         action = self.actor_critic.act(
             torch.as_tensor(observation, dtype=torch.float32)
         )
-        action += noise_scale * np.random.random(self.act_dim)
+        action += noise_scale * self.max_act.numpy() * np.random.random(self.act_dim)
         return action
 
     def compute_Q_loss(self, datum):
         o, a, r, o2, d = datum['obs'], datum['act'], datum['rew'], datum['obs2'], datum['done']
-        q_value = self.actor_critic.critic(o, a)
+        q_value = self.actor_critic.critic(o, a / self.max_act)
 
         with torch.no_grad():
-            q_pi_target = self.target_ac.critic(o2, self.target_ac.actor(o2))
+            # ターゲットネットワークの更新をしないようにする。
+            q_pi_target = self.target_ac.critic(o2, self.target_ac.actor(o2) / self.max_act)
             backup = r + self.gamma * (1 - d) * q_pi_target
 
         loss_q = ((q_value - backup)**2).mean()
@@ -40,13 +43,18 @@ class DDPGAgent(Agent):
 
     def compute_pi_loss(self, datum):
         o = datum['obs']
-        q_pi = self.actor_critic.critic(o, self.actor_critic.actor(o))
-        return -q_pi.mean()
+        normalized_a_pi = self.actor_critic.actor(o) / self.max_act
+        q_pi = self.actor_critic.critic(o, normalized_a_pi)
+        loss_pi = -q_pi.mean()
+        # 正則化項
+        loss_pi += self.l2_action * (normalized_a_pi**2).mean()
+        return loss_pi
 
     def update(self, datum):
         # Critic Networkの更新処理
         self.critic_optimizer.zero_grad()
-        loss_q, loss_info = self.compute_Q_loss(datum)
+        loss_q, loss_q_info = self.compute_Q_loss(datum)
+        qs = loss_q_info["QVals"]
         loss_q.backward()
         self.critic_optimizer.step()
 
@@ -66,3 +74,5 @@ class DDPGAgent(Agent):
             for p, p_target in zip(self.actor_critic.parameters(), self.target_ac.parameters()):
                 p_target.data.mul_(self.polyak)
                 p_target.data.add_((1 - self.polyak) * p.data)
+
+        return loss_q, loss_pi, max(qs)

@@ -7,13 +7,15 @@ class Actor(nn.Module):
     def __init__(self, d_input, d_output, act_limit):
         super(Actor, self).__init__()
         self.actor_network = nn.Sequential(
-            nn.Linear(d_input, 64),
+            nn.Linear(d_input, 256),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(256, 256),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(256, 256),
             nn.ReLU(),
-            nn.Linear(64, d_output),
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, d_output),
             nn.Tanh()
         )
         self.act_limit = act_limit
@@ -27,14 +29,16 @@ class Critic(nn.Module):
     def __init__(self, d_input, d_output):
         super(Critic, self).__init__()
         self.critic_network = nn.Sequential(
-            nn.Linear(d_input, 64),
+            nn.Linear(d_input, 256),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(256, 256),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(256, 256),
             nn.ReLU(),
-            nn.Linear(64, d_output),
-            nn.ReLU()
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, d_output),
+            nn.Identity()
         )
 
     def forward(self, obs, action):
@@ -45,8 +49,9 @@ class Critic(nn.Module):
 class ActorCritic(nn.Module):
     def __init__(self, observation_space, action_space):
         super(ActorCritic, self).__init__()
-        self.actor = Actor(observation_space["observation"].shape[0], action_space.shape[0], action_space.high[0])
-        self.critic = Critic(observation_space["observation"].shape[0] + action_space.shape[0], 1)
+        input_dim = observation_space.shape[0]
+        self.actor = Actor(input_dim, action_space.shape[0], action_space.high[0])
+        self.critic = Critic(input_dim + action_space.shape[0], 1)
 
     def act(self, obs):
         with torch.no_grad():
