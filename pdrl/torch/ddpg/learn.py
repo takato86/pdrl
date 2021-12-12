@@ -78,6 +78,7 @@ def learn(env_fn, preprocess, epochs, steps_per_epoch, start_steps, update_after
                 writer.add_scalar("Train/loss_pi", loss_pi, basis + j)
 
         # End of epoch handling
+        # TODO ランクが1の場合のみ処理するように変更
         if (i+1) % steps_per_epoch == 0:
             epoch = (i+1) // steps_per_epoch
             # logger.info(f"Epoch {epoch}\n-------------------------------")

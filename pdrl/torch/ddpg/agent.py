@@ -56,6 +56,7 @@ class DDPGAgent(Agent):
         loss_q, loss_q_info = self.compute_Q_loss(datum)
         qs = loss_q_info["QVals"]
         loss_q.backward()
+        # TODO ここで平均化
         self.critic_optimizer.step()
 
         # Freeze Critic Network
@@ -65,6 +66,7 @@ class DDPGAgent(Agent):
         self.actor_optimizer.zero_grad()
         loss_pi = self.compute_pi_loss(datum)
         loss_pi.backward()
+        # TODO ここで勾配を平均化
         self.actor_optimizer.step()
 
         for p in self.actor_critic.critic.parameters():
