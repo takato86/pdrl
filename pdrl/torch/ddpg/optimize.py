@@ -16,6 +16,7 @@ def optimize_hyparams(env_fn, preprocess, configs):
     update_every = configs["update_every"]
     num_test_episodes = configs["num_test_episodes"]
     max_ep_len = configs["max_ep_len"]
+    batch_size = configs["batch_size"]
 
     def objective(trial):
         max_gamma = 1. - 1. / max_ep_len
@@ -29,7 +30,7 @@ def optimize_hyparams(env_fn, preprocess, configs):
         noise_scale = trial.suggest_categorical("noise_scale", [0.2, 0.3, 0.1])
         perf = learn(env_fn, preprocess, epochs, steps_per_epoch, start_steps, update_after, update_every,
                      num_test_episodes, max_ep_len, gamma, actor_lr, critic_lr, replay_size,
-                     polyak, l2_action, noise_scale)
+                     polyak, l2_action, noise_scale, batch_size)
         return perf
 
     study = optuna.create_study()
