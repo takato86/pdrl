@@ -1,18 +1,19 @@
 {
     "env": "SingleFetchPickAndPlace-v0",
-    "n_trials": 100,
+    "n_trials": 1,
     "start_steps": 200,
     "steps_per_epoch": 200,
     "epochs": 500,
-    "update_after": 0,
+    "update_after": 2560,
     "update_every": 50,
     "num_test_episodes": 10,
     "max_ep_len": 50,
     "gamma": 0.98,
-    "actor_lr": 0.0001,
-    "critic_lr": 0.0001,
+    "actor_lr": 0.001,
+    "critic_lr": 0.001,
     "polyak": 0.95,
     "l2_action": 1.0,
     "replay_size": 1e6,
-    "noise_scale": 0.3
+    "noise_scale": 0.3,
+    "batch_size": 256
 }
