@@ -29,7 +29,7 @@ def test(test_env, agent, preprocess, num_test_episodes, max_ep_len):
 
 
 def learn(env_fn, preprocess, epochs, steps_per_epoch, start_steps, update_after, update_every, num_test_episodes,
-          max_ep_len, gamma, actor_lr, critic_lr, replay_size, polyak, l2_action, noise_scale, batch_size):
+          max_ep_len, gamma, epsilon, actor_lr, critic_lr, replay_size, polyak, l2_action, noise_scale, batch_size):
     env = env_fn()
     test_env = env
 
@@ -41,7 +41,7 @@ def learn(env_fn, preprocess, epochs, steps_per_epoch, start_steps, update_after
     logger.debug("train initial obs: {}".format(o))
     o, _, _, _ = preprocess(o, 0, False, None)
     agent = DDPGAgent(
-        o, env.action_space, gamma, actor_lr, critic_lr,
+        o, env.action_space, gamma, epsilon, actor_lr, critic_lr,
         polyak, l2_action, logger
     )
     replay_buffer = ReplayBuffer(

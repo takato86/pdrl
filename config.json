@@ -1,6 +1,6 @@
 {
     "env": "SingleFetchPickAndPlace-v0",
-    "n_trials": 1,
+    "n_trials": 3,
     "start_steps": 200,
     "steps_per_epoch": 200,
     "epochs": 500,
@@ -15,5 +15,6 @@
     "l2_action": 1.0,
     "replay_size": 1e6,
     "noise_scale": 0.3,
-    "batch_size": 256
+    "batch_size": 256,
+    "epsilon": 0.2
 }

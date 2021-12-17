@@ -8,9 +8,8 @@ from pdrl.torch.ddpg.network import ActorCritic
 from pdrl.utils.mpi_torch import mpi_avg_grad, sync_params
 
 
-
 class DDPGAgent(Agent):
-    def __init__(self, observation_space, action_space, gamma, actor_lr, critic_lr, polyak, l2_action, logger):
+    def __init__(self, observation_space, action_space, gamma, epsilon, actor_lr, critic_lr, polyak, l2_action, logger):
         self.gamma = gamma
         self.actor_critic = ActorCritic(observation_space, action_space)
         # MPIプロセス間で重みを共通化
@@ -19,11 +18,13 @@ class DDPGAgent(Agent):
         self.target_ac = copy.deepcopy(self.actor_critic)
         self.actor_optimizer = Adam(self.actor_critic.actor.parameters(), lr=actor_lr)
         self.critic_optimizer = Adam(self.actor_critic.critic.parameters(), lr=critic_lr)
+        self.epsilon = epsilon
         self.polyak = polyak
         self.act_dim = action_space.shape[0]
         self.max_act = torch.Tensor(action_space.high)
         self.logger = logger
         self.l2_action = l2_action
+        self.random_act = action_space.sample
 
     def act(self, observation, noise_scale):
         # TODO obsの正規化
@@ -31,7 +32,9 @@ class DDPGAgent(Agent):
             torch.as_tensor(observation, dtype=torch.float32)
         )
         action += noise_scale * self.max_act.numpy() * np.random.random(self.act_dim)
-        # TODO epsilon-greedyの実装
+        # binomialは1をepsilonの確率で返す。1になった時はrandom_actが実行される。これを次元毎に。
+        # epsilon-greedy
+        action += np.random.binomial(1, self.epsilon, self.act_dim) * (self.random_act() - action)
         return action
 
     def compute_Q_loss(self, datum):
