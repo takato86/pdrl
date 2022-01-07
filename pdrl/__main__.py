@@ -4,7 +4,6 @@ import json
 import numpy as np
 import gym
 import gym_m2s
-from mlflow import log_artifact
 from pdrl.torch.ddpg.train import train
 from pdrl.torch.ddpg.optimize import optimize_hyparams
 
@@ -15,18 +14,20 @@ logger = logging.getLogger()
 
 def preprocess(obs, r, d, info):
     g = obs["desired_goal"]
-    ag = obs["achieved_goal"]
-    diff_g = g - ag
     observation = obs["observation"]
-    obs = np.hstack([observation, diff_g])
+    obs = np.hstack([observation, g])
+    obs = obs.reshape([1, -1])
     return obs, r, d, info
 
 
 def main():
-    env_name = configs["env"]
+    env_name = configs["env_id"]
+    env_params = configs["env_params"]
 
     def create_env():
-        return gym.make(env_name)
+        env = gym.make(env_name, **env_params)
+        env.seed(configs["env_seed"])
+        return env
 
     env_fn = create_env
 
@@ -39,8 +40,11 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--optimize", "-o", action='store_true')
+    parser.add_argument("--config", "-c", type=str, default="configs/config.json")
     args = parser.parse_args()
-    with open("config.json", "r") as f:
+
+    with open(args.config, "r") as f:
         configs = json.load(f)
-        log_artifact("config.json")
+        # log_artifact("config.json")
+
     main()

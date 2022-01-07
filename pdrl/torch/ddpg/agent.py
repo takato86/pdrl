@@ -9,7 +9,7 @@ from pdrl.utils.mpi_torch import mpi_avg_grad, sync_params
 
 
 class DDPGAgent(Agent):
-    def __init__(self, observation_space, action_space, gamma, epsilon, actor_lr, critic_lr, polyak, l2_action, logger):
+    def __init__(self, observation_space, action_space, gamma, actor_lr, critic_lr, polyak, l2_action, logger):
         self.gamma = gamma
         self.actor_critic = ActorCritic(observation_space, action_space)
         # MPIプロセス間で重みを共通化
@@ -18,7 +18,6 @@ class DDPGAgent(Agent):
         self.target_ac = copy.deepcopy(self.actor_critic)
         self.actor_optimizer = Adam(self.actor_critic.actor.parameters(), lr=actor_lr)
         self.critic_optimizer = Adam(self.actor_critic.critic.parameters(), lr=critic_lr)
-        self.epsilon = epsilon
         self.polyak = polyak
         self.act_dim = action_space.shape[0]
         self.max_act = torch.Tensor(action_space.high)
@@ -26,15 +25,16 @@ class DDPGAgent(Agent):
         self.l2_action = l2_action
         self.random_act = action_space.sample
 
-    def act(self, observation, noise_scale):
-        # TODO obsの正規化
+    def act(self, observation, noise_scale, epsilon):
         action = self.actor_critic.act(
             torch.as_tensor(observation, dtype=torch.float32)
         )
         action += noise_scale * self.max_act.numpy() * np.random.random(self.act_dim)
         # binomialは1をepsilonの確率で返す。1になった時はrandom_actが実行される。これを次元毎に。
         # epsilon-greedy
-        action += np.random.binomial(1, self.epsilon, self.act_dim) * (self.random_act() - action)
+        action = np.clip(action, -self.max_act.numpy(), self.max_act.numpy())
+        action += np.random.binomial(1, epsilon, self.act_dim) * (self.random_act() - action)
+        action = action.reshape(-1)
         return action
 
     def compute_Q_loss(self, datum):
@@ -46,7 +46,7 @@ class DDPGAgent(Agent):
             q_pi_target = self.target_ac.critic(o2, self.target_ac.actor(o2) / self.max_act)
             backup = r + self.gamma * (1 - d) * q_pi_target
 
-        loss_q = ((q_value - backup)**2).mean()
+        loss_q = torch.mean((q_value - backup)**2)
         # "detach" Returns a new Tensor, detached from the current graph.
         loss_info = dict(QVals=q_value.detach().numpy())
         return loss_q, loss_info
@@ -55,15 +55,14 @@ class DDPGAgent(Agent):
         o = datum['obs']
         normalized_a_pi = self.actor_critic.actor(o) / self.max_act
         q_pi = self.actor_critic.critic(o, normalized_a_pi)
-        loss_pi = -q_pi.mean()
+        loss_pi = -torch.mean(q_pi)
         # 正則化項
-        loss_pi += self.l2_action * (normalized_a_pi**2).mean()
+        loss_pi += self.l2_action * torch.mean(torch.square(normalized_a_pi))
         return loss_pi
 
     def update(self, datum):
         """方策と価値関数の更新"""
         # Critic Networkの更新処理
-        # TODO datum["obs"]の正規化
         self.critic_optimizer.zero_grad()
         loss_q, loss_q_info = self.compute_Q_loss(datum)
         qs = loss_q_info["QVals"]
@@ -87,7 +86,7 @@ class DDPGAgent(Agent):
             p.requires_grad = True
 
         loss_q_numpy, loss_pi_numpy = loss_q.detach().numpy(), loss_pi.detach().numpy()
-        return loss_q_numpy, loss_pi_numpy, max(qs)
+        return loss_q_numpy, loss_pi_numpy, np.mean(qs, 0)
 
 
     def sync_target(self):

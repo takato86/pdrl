@@ -1,3 +1,4 @@
+import logging
 from mpi4py import MPI
 import numpy as np
 
@@ -11,7 +12,13 @@ def num_procs():
 
 
 def allreduce(*args, **kwargs):
-    return MPI.COMM_WORLD.Allreduce(*args, **kwargs)
+    try:
+        return MPI.COMM_WORLD.Allreduce(*args, **kwargs)
+    except Exception as e:
+        logging.error("x={}".format(args[0]))
+        logging.error("buff={}".format(args[1]))
+        logging.error(e)
+        raise
 
 
 def mpi_op(x, op):
@@ -21,8 +28,14 @@ def mpi_op(x, op):
     allreduce(x, buff, op=op)
     return buff[0] if scalar else buff
 
+
 def mpi_avg(x):
     return mpi_op(x, MPI.SUM) / num_procs()
+
+
+def mpi_sum(x):
+    return mpi_op(x, MPI.SUM)
+
 
 def broadcast(x, root=0):
     MPI.COMM_WORLD.Bcast(x, root=root)
