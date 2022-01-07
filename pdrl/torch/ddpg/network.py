@@ -49,7 +49,7 @@ class Critic(nn.Module):
 class ActorCritic(nn.Module):
     def __init__(self, observation_space, action_space):
         super(ActorCritic, self).__init__()
-        input_dim = observation_space.shape[0]
+        input_dim = observation_space.shape[1]
         self.actor = Actor(input_dim, action_space.shape[0], action_space.high[0])
         self.critic = Critic(input_dim + action_space.shape[0], 1)
 
