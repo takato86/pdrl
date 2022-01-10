@@ -29,7 +29,8 @@ class DDPGAgent(Agent):
         action = self.actor_critic.act(
             torch.as_tensor(observation, dtype=torch.float32)
         )
-        action += noise_scale * self.max_act.numpy() * np.random.random(self.act_dim)
+        # gaussian noise
+        action += noise_scale * self.max_act.numpy() * np.random.randn(self.act_dim)
         # binomialは1をepsilonの確率で返す。1になった時はrandom_actが実行される。これを次元毎に。
         # epsilon-greedy
         action = np.clip(action, -self.max_act.numpy(), self.max_act.numpy())

@@ -2,9 +2,14 @@
 private deep reinforcement learning programs
 
 ## How to use
-1. Run the following
+- Run the following
 ```
 python -m pdrl 
+```
+or 
+
+```
+mpiexec -n 5 python -m pdrl
 ```
 
 ## Optimize the hyperparameters

@@ -81,19 +81,6 @@ def learn(env_fn, preprocess, epochs, steps_per_epoch, start_steps, update_after
             avg_ep_ret, avg_ep_len, avg_is_succ = mpi_avg(ep_ret), mpi_avg(ep_len), mpi_avg(is_succ)
 
             if proc_id() == 0:
-                try:
-                    assert avg_ep_len > 2
-                except AssertionError as e:
-                    logger.error(o)
-                    logger.error(o2)
-                    logger.error(f"done: {d}")
-                    logger.error(f"ep_len: {ep_len}")
-                    logger.error(f"ep_ret: {ep_ret}")
-                    logger.error(f"is_succ: {is_succ}")
-                    logger.error(f"info: {info}")
-                    logger.error(f"reward: {r}")
-                    raise e
-                
                 writer.add_scalar("Train/return", scalar_value=avg_ep_ret, global_step=num_episodes)
                 writer.add_scalar("Train/steps", scalar_value=avg_ep_len, global_step=num_episodes)
                 writer.add_scalar("Train/succ_rate", scalar_value=avg_is_succ, global_step=num_episodes)
