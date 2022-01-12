@@ -27,7 +27,9 @@
         "batch_size": 512,
         "epsilon": 0.4,
         "norm_clip": 5,
-        "norm_eps": 0.01
+        "norm_eps": 0.01,
+        "clip_return": 100,
+        "is_pos_return": false
     },
     "env_params": {
         "initial_goal_seed": 10

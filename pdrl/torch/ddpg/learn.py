@@ -38,7 +38,7 @@ def test(test_env, agent, normalizer, preprocess, num_test_episodes, max_ep_len)
 
 def learn(env_fn, preprocess, epochs, steps_per_epoch, start_steps, update_after, update_every, num_test_episodes,
           max_ep_len, gamma, epsilon, actor_lr, critic_lr, replay_size, polyak, l2_action, noise_scale, batch_size,
-          norm_clip, norm_eps, logdir=None):
+          norm_clip, norm_eps, clip_return, is_pos_return, logdir=None):
     env = env_fn()
     test_env = env
 
@@ -51,7 +51,7 @@ def learn(env_fn, preprocess, epochs, steps_per_epoch, start_steps, update_after
     o, _, _, _ = preprocess(o, 0, False, None)
     agent = DDPGAgent(
         o, env.action_space, gamma, actor_lr, critic_lr,
-        polyak, l2_action, logger
+        polyak, l2_action, clip_return, is_pos_return, logger
     )
     normalizer = Zscorer(norm_clip, norm_eps)
     replay_buffer = ReplayBuffer(

@@ -9,7 +9,8 @@ from pdrl.utils.mpi_torch import mpi_avg_grad, sync_params
 
 
 class DDPGAgent(Agent):
-    def __init__(self, observation_space, action_space, gamma, actor_lr, critic_lr, polyak, l2_action, logger):
+    def __init__(self, observation_space, action_space, gamma, actor_lr, critic_lr, polyak, l2_action, clip_return,
+                 is_pos_return, logger):
         self.gamma = gamma
         self.actor_critic = ActorCritic(observation_space, action_space)
         # MPIプロセス間で重みを共通化
@@ -24,6 +25,10 @@ class DDPGAgent(Agent):
         self.logger = logger
         self.l2_action = l2_action
         self.random_act = action_space.sample
+        self.return_clipping_params = {
+            "min": -clip_return,
+            "max": np.inf if is_pos_return else 0
+        }
 
     def act(self, observation, noise_scale, epsilon):
         action = self.actor_critic.act(
@@ -46,6 +51,7 @@ class DDPGAgent(Agent):
             # ターゲットネットワークの更新をしないようにする。
             q_pi_target = self.target_ac.critic(o2, self.target_ac.actor(o2) / self.max_act)
             backup = r + self.gamma * (1 - d) * q_pi_target
+            backup = torch.clip(backup, **self.return_clipping_params)
 
         loss_q = torch.mean((q_value - backup)**2)
         # "detach" Returns a new Tensor, detached from the current graph.

@@ -43,6 +43,8 @@ def optimize_hyparams(env_fn, preprocess, configs):
             "logdir": "runs/optimize/" + str(datetime.now()),
             "norm_clip": configs["agent_params"]["norm_clip"],
             "norm_eps": configs["agent_params"]["norm_eps"],
+            "clip_return": configs["agent_params"]["clip_return"],
+            "is_pos_return": configs["agent_params"]["is_pos_return"],
             **logged_params
         }
         perf = learn(**params)
