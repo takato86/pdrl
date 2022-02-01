@@ -1,17 +1,25 @@
 import logging
 import os
 from datetime import datetime
+from pdrl.experiments.pick_and_place.pipeline import create_pipeline
+from pdrl.experiments.pick_and_place.pipeline import create_test_pipeline
 from pdrl.torch.ddpg.learn import learn
+from pdrl.utils.config import export_config
+from pdrl.utils.mpi import proc_id
+from pdrl.utils.file_handler import prep_dir
 
 
 logger = logging.getLogger()
 
 
-def train(env_fn, preprocess, configs):
+def train(env_fn, configs):
     n_runs = int(configs["training_params"]["nruns"])
+    pipeline = create_pipeline(configs)
+    test_pipeline = create_test_pipeline(configs)
     params = {
         "env_fn": env_fn,
-        "preprocess": preprocess,
+        "pipeline": pipeline,
+        "test_pipeline": test_pipeline,
         "epochs": configs["training_params"]["epochs"],
         "steps_per_epoch": configs["training_params"]["steps_per_epoch"],
         "start_steps": configs["training_params"]["start_steps"],
@@ -36,9 +44,17 @@ def train(env_fn, preprocess, configs):
 
     dir_path = "runs/train"
     start_at = datetime.now()
+
     for t in range(n_runs):
         logger.info("START Trial {}".format(t))
-        dir_name = str(start_at) + "_" + str(t)
-        params["logdir"] = os.path.join(dir_path, dir_name)
+
+        if proc_id() == 0:
+            dir_name = str(start_at) + "_" + str(t)
+            logdir = os.path.join(dir_path, dir_name)
+            prep_dir(logdir)
+            params["logdir"] = logdir
+            output_cfg_path = os.path.join(logdir, "config.json")
+            export_config(output_cfg_path)
+
         learn(**params)
         logger.info("END Trial {}".format(t))

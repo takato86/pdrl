@@ -1,23 +1,14 @@
 import argparse
 import logging
-import json
-import numpy as np
 import gym
 import gym_m2s
 from pdrl.torch.ddpg.train import train
 from pdrl.torch.ddpg.optimize import optimize_hyparams
+from pdrl.utils.config import load_config
 
 gym_m2s
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
-
-
-def preprocess(obs, r, d, info):
-    g = obs["desired_goal"]
-    observation = obs["observation"]
-    obs = np.hstack([observation, g])
-    obs = obs.reshape([1, -1])
-    return obs, r, d, info
 
 
 def main():
@@ -32,9 +23,9 @@ def main():
     env_fn = create_env
 
     if args.optimize:
-        optimize_hyparams(env_fn, preprocess, configs)
+        optimize_hyparams(env_fn, configs)
     else:
-        train(env_fn, preprocess, configs)
+        train(env_fn, configs)
 
 
 if __name__ == "__main__":
@@ -42,9 +33,5 @@ if __name__ == "__main__":
     parser.add_argument("--optimize", "-o", action='store_true')
     parser.add_argument("--config", "-c", type=str, default="configs/config.json")
     args = parser.parse_args()
-
-    with open(args.config, "r") as f:
-        configs = json.load(f)
-        # log_artifact("config.json")
-
+    configs = load_config(args.config)
     main()
