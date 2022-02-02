@@ -1,5 +1,7 @@
 import logging
 import optuna
+from pdrl.experiments.pick_and_place.pipeline import create_pipeline, create_test_pipeline
+from pdrl.experiments.pick_and_place.sampler import sample_shaping_params
 from pdrl.torch.ddpg.learn import learn
 import mlflow
 from datetime import datetime
@@ -8,20 +10,22 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
-def optimize_hyparams(env_fn, preprocess, configs):
+def optimize_hyparams(env_fn, configs):
     logger.info("OPTIMIZE HYPAPER PARAMETERS.")
     experiment_id = mlflow.create_experiment("DDPG Hyperparameter Tuning Experiment-{}".format(datetime.now()))
     n_trials = configs["hypara_optimization_params"]["n_trials"]
     max_ep_len = configs["training_params"]["max_ep_len"]
+    shaping_method = configs.get("shaping_method")
 
     def objective(trial):
         mlflow.start_run(experiment_id=experiment_id)
         # max_gamma = 1. - 1. / max_ep_len
         # min_gamma = 1. - 5. / max_ep_len
+        gamma = trial.suggest_categorical("gamma", [0.9, 0.99, 0.999, 0.9999, 0.95, 0.995, 0.98])
         logged_params = {
             "batch_size": trial.suggest_categorical("batch_size", [128, 256, 512, 1024]),
             "epsilon": trial.suggest_categorical("epsilon", [0.1, 0.2, 0.3, 0.4, 0.5]),
-            "gamma": trial.suggest_categorical("gamma", [0.9, 0.99, 0.999, 0.9999, 0.95, 0.995, 0.98]),
+            "gamma": gamma,
             "actor_lr": trial.suggest_categorical("actor_lr", [0.001, 0.0001, 0.005, 0.01, 0.00001]),
             "critic_lr": trial.suggest_categorical("critic_lr", [0.001, 0.0001, 0.005, 0.01, 0.00001]),
             "replay_size": trial.suggest_categorical("replay_size", [int(1E6), int(1E5), int(1E4)]),
@@ -29,7 +33,13 @@ def optimize_hyparams(env_fn, preprocess, configs):
             "l2_action": trial.suggest_categorical("l2_action", [0.5, 0.8, 1.0, 1.2, 1.5]),
             "noise_scale": trial.suggest_categorical("noise_scale", [0.2, 0.3, 0.1, 0.4, 0.01]),
         }
-        mlflow.log_params(logged_params)
+        trial.set_user_attr("GAMMA", gamma)
+        shaping_hyperparams = sample_shaping_params(trial, shaping_method)
+        mlflow.log_params({**logged_params, **shaping_hyperparams})
+        updated_configs = configs.copy()
+        updated_configs["shaping_params"] = shaping_hyperparams
+        pipeline = create_pipeline(updated_configs)
+        test_pipeline = create_test_pipeline(updated_configs)
         params = {
             "epochs": configs["training_params"]["epochs"],
             "steps_per_epoch": configs["training_params"]["steps_per_epoch"],
@@ -39,7 +49,8 @@ def optimize_hyparams(env_fn, preprocess, configs):
             "num_test_episodes": configs["eval_params"]["num_test_episodes"],
             "max_ep_len": max_ep_len,
             "env_fn": env_fn,
-            "preprocess": preprocess,
+            "pipeline": pipeline,
+            "test_pipeline": test_pipeline,
             "logdir": "runs/optimize/" + str(datetime.now()),
             "norm_clip": configs["agent_params"]["norm_clip"],
             "norm_eps": configs["agent_params"]["norm_eps"],
