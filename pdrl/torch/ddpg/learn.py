@@ -29,6 +29,7 @@ def test(test_env, agent, normalizer, pipeline, num_test_episodes, max_ep_len):
             rets.append(r)
             is_success |= bool(info["is_success"])
             ep_len += 1
+
         ep_rets.append(sum(rets))
         ep_lens.append(ep_len)
         is_successes.append(is_success)
@@ -72,6 +73,7 @@ def learn(env_fn, pipeline, test_pipeline, epochs, steps_per_epoch, start_steps,
         f_o2, r, d, info = env.step(a)
         o, a, r, o2, d, info = pipeline.transform(f_o, a, r, f_o2, d, info)
         replay_buffer.store(o, a, r, o2, d)
+        f_o = f_o2.copy()
         o = o2.copy()
         ep_len, ep_ret = ep_len + 1, ep_ret + r
         is_succ |= bool(info["is_success"])

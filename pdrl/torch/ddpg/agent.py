@@ -95,7 +95,6 @@ class DDPGAgent(Agent):
         loss_q_numpy, loss_pi_numpy = loss_q.detach().numpy(), loss_pi.detach().numpy()
         return loss_q_numpy, loss_pi_numpy, np.mean(qs, 0)
 
-
     def sync_target(self):
         """Target Networkとの同期"""
         with torch.no_grad():
