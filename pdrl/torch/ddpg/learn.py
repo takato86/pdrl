@@ -1,6 +1,8 @@
 import logging
+import os
 import torch
 from statistics import mean
+from gym.wrappers.record_video import RecordVideo
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from pdrl.torch.ddpg.agent import DDPGAgent
@@ -41,11 +43,13 @@ def test(test_env, agent, normalizer, pipeline, num_test_episodes, max_ep_len):
 
 def learn(env_fn, pipeline, test_pipeline, epochs, steps_per_epoch, start_steps, update_after, update_every,
           num_test_episodes, max_ep_len, gamma, epsilon, actor_lr, critic_lr, replay_size, polyak, l2_action,
-          noise_scale, batch_size, norm_clip, norm_eps, clip_return, is_pos_return, logdir=None):
+          noise_scale, batch_size, norm_clip, norm_eps, clip_return, is_pos_return, logdir=None, video=False):
     env = env_fn()
     test_env = env
 
     if proc_id() == 0:
+        video_folder = os.path.join(logdir, "videos")
+        test_env = RecordVideo(env, video_folder=video_folder) if video else env
         writer = SummaryWriter(logdir)
 
     total_steps = steps_per_epoch * epochs // num_procs()

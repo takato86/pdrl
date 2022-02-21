@@ -56,6 +56,7 @@ def optimize_hyparams(env_fn, configs):
             "norm_eps": configs["agent_params"]["norm_eps"],
             "clip_return": configs["agent_params"]["clip_return"],
             "is_pos_return": configs["agent_params"]["is_pos_return"],
+            "video": False,
             **logged_params
         }
         perf = learn(**params)
