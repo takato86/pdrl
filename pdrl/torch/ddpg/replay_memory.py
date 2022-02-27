@@ -2,6 +2,32 @@ import numpy as np
 import torch
 
 
+def create_replay_buffer_fn(shaper, size):
+
+    def create_replay_buffer(obs_dim, act_dim):
+        """return a replay buffer instance.
+
+        Args:
+            obs_dim (_type_): _description_
+            act_dim (_type_): _description_
+            size (_type_): _description_
+            shaper (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
+        if shaper is None:
+            # Case without shaping
+            replay_buffer = ReplayBuffer(obs_dim, act_dim, size)
+        else:
+            # Case with shaping
+            replay_buffer = DynamicShapingReplayBuffer(obs_dim, act_dim, size, shaper)
+
+        return replay_buffer
+
+    return create_replay_buffer
+
+
 def combined_shape(length, shape=None):
     if shape is None:
         return (length,)
@@ -21,7 +47,7 @@ class ReplayBuffer:
         self.done_buf = np.zeros(size, dtype=np.float32)
         self.ptr, self.size, self.max_size = 0, 0, size
 
-    def store(self, obs, act, rew, next_obs, done):
+    def store(self, obs, act, rew, next_obs, done, info):
         self.obs_buf[self.ptr] = obs
         self.obs2_buf[self.ptr] = next_obs
         self.act_buf[self.ptr] = act
@@ -67,18 +93,22 @@ class DynamicShapingReplayBuffer:
         self.ptr = (self.ptr+1) % self.max_size
         self.size = min(self.size+1, self.max_size)
         self.aobs_buf[self.ptr] = self.shaper.get_current_state()
-        _ = self.shaper.shape(obs, act, rew, next_obs, done, info)
+        _ = self.shaper.step(obs, act, rew, next_obs, done, info)
         # inner state of shaper transits when the `shape` method is called.
-        self.aobs2_buf[self.ptr] = self.shaper.get_current_stete()
+        self.aobs2_buf[self.ptr] = self.shaper.get_current_state()
 
     def sample_batch(self, batch_size=32):
         idxs = np.random.randint(0, self.size, size=batch_size)
-        # TODO rewの再計算
-        # TODO in shaner, rewの再計算用の関数作成。
+        shaping = np.zeros(batch_size)
+
+        # shapingの報酬値計算
+        for i, (aobs, aobs2) in enumerate(zip(self.aobs_buf[idxs], self.aobs2_buf[idxs])):
+            shaping[i] = self.shaper.shape(aobs, aobs2)
+
         batch = dict(obs=self.obs_buf[idxs],
                      obs2=self.obs2_buf[idxs],
                      act=self.act_buf[idxs],
-                     rew=self.rew_buf[idxs],
+                     rew=self.rew_buf[idxs] + shaping,
                      done=self.done_buf[idxs])
         return {
             k: torch.as_tensor(v, dtype=torch.float32)

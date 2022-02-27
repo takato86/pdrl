@@ -43,4 +43,3 @@ class Zscorer(Normalizer):
         self.sum_obs += np.sum(mpi_sum(obs), axis=0)
         self.sum_sq_obs += np.sum(mpi_sum(obs**2), axis=0)
         self.count_obs += num_procs() * obs.shape[0]
-        

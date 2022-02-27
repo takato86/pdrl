@@ -6,7 +6,6 @@ from gym.wrappers.record_video import RecordVideo
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from pdrl.torch.ddpg.agent import DDPGAgent
-from pdrl.torch.ddpg.replay_memory import ReplayBuffer
 from pdrl.torch.normalizer import Zscorer
 from pdrl.utils.mpi import mpi_avg, num_procs, proc_id
 
@@ -41,8 +40,8 @@ def test(test_env, agent, normalizer, pipeline, num_test_episodes, max_ep_len):
     return mean(ep_rets), mean(ep_lens), mean(is_successes)
 
 
-def learn(env_fn, pipeline, test_pipeline, epochs, steps_per_epoch, start_steps, update_after, update_every,
-          num_test_episodes, max_ep_len, gamma, epsilon, actor_lr, critic_lr, replay_size, polyak, l2_action,
+def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_epoch, start_steps, update_after,
+          update_every, num_test_episodes, max_ep_len, gamma, epsilon, actor_lr, critic_lr, polyak, l2_action,
           noise_scale, batch_size, norm_clip, norm_eps, clip_return, is_pos_return, logdir=None, video=False):
     env = env_fn()
     test_env = env
@@ -61,8 +60,8 @@ def learn(env_fn, pipeline, test_pipeline, epochs, steps_per_epoch, start_steps,
         polyak, l2_action, clip_return, is_pos_return, logger
     )
     normalizer = Zscorer(norm_clip, norm_eps)
-    replay_buffer = ReplayBuffer(
-        o.shape[1], env.action_space.shape[0], replay_size
+    replay_buffer = replay_buffer_fn(
+        o.shape[1], env.action_space.shape[0]
     )
 
     # 入出力の型をモジュール毎に統一したい。
@@ -76,7 +75,7 @@ def learn(env_fn, pipeline, test_pipeline, epochs, steps_per_epoch, start_steps,
 
         f_o2, r, d, info = env.step(a)
         o, a, r, o2, d, info = pipeline.transform(f_o, a, r, f_o2, d, info)
-        replay_buffer.store(o, a, r, o2, d)
+        replay_buffer.store(o, a, r, o2, d, info)
         f_o = f_o2.copy()
         o = o2.copy()
         ep_len, ep_ret = ep_len + 1, ep_ret + r

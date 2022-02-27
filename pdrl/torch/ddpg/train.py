@@ -4,6 +4,8 @@ from datetime import datetime
 from pdrl.experiments.pick_and_place.pipeline import create_pipeline
 from pdrl.experiments.pick_and_place.pipeline import create_test_pipeline
 from pdrl.torch.ddpg.learn import learn
+from pdrl.torch.ddpg.replay_memory import create_replay_buffer_fn
+from pdrl.transform.shaping import create_shaper
 from pdrl.utils.config import export_config
 from pdrl.utils.mpi import proc_id
 from pdrl.utils.file_handler import prep_dir
@@ -16,10 +18,13 @@ def train(env_fn, configs):
     n_runs = int(configs["training_params"]["nruns"])
     pipeline = create_pipeline(configs)
     test_pipeline = create_test_pipeline(configs)
+    shaper = create_shaper(configs, env_fn)
+    replay_buffer_fn = create_replay_buffer_fn(shaper, configs["agent_params"]["replay_size"])
     params = {
         "env_fn": env_fn,
         "pipeline": pipeline,
         "test_pipeline": test_pipeline,
+        "replay_buffer_fn": replay_buffer_fn,
         "epochs": configs["training_params"]["epochs"],
         "steps_per_epoch": configs["training_params"]["steps_per_epoch"],
         "start_steps": configs["training_params"]["start_steps"],
@@ -31,7 +36,6 @@ def train(env_fn, configs):
         "epsilon": configs["agent_params"]["epsilon"],
         "actor_lr": configs["agent_params"]["actor_lr"],
         "critic_lr": configs["agent_params"]["critic_lr"],
-        "replay_size": configs["agent_params"]["replay_size"],
         "polyak": configs["agent_params"]["polyak"],
         "l2_action": configs["agent_params"]["l2_action"],
         "noise_scale": configs["agent_params"]["noise_scale"],
