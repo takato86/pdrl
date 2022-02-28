@@ -11,7 +11,7 @@ def trans_obs(obs):
 
 
 class RoboticsObservationTransformer(Step):
-    def transform(pre_obs, pre_action, r, obs, d, info):
+    def transform(self, pre_obs, pre_action, r, obs, d, info):
         if pre_obs is not None:
             pre_obs = trans_obs(pre_obs)
         if obs is not None:

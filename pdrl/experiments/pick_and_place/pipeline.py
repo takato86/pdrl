@@ -1,13 +1,27 @@
+from pdrl.experiments.pick_and_place.achiever import FetchPickAndPlaceAchieverStep
+from pdrl.experiments.pick_and_place.subgoal import generate_subgoals
 from pdrl.transform.pipeline import Pipeline
 from pdrl.experiments.pick_and_place.preprocess import RoboticsObservationTransformer
 
 
 def create_test_pipeline(configs):
-    return Pipeline([RoboticsObservationTransformer])
+    subgoals = generate_subgoals()
+    return Pipeline(
+        [
+            RoboticsObservationTransformer(),
+            FetchPickAndPlaceAchieverStep(configs["achiever_params"]["_range"], subgoals)
+        ]
+    )
 
 
 def create_pipeline(configs):
-    pipe = Pipeline([RoboticsObservationTransformer])
+    subgoals = generate_subgoals()
+    pipe = Pipeline(
+        [
+            RoboticsObservationTransformer(),
+            FetchPickAndPlaceAchieverStep(configs["achiever_params"]["_range"], subgoals)
+        ]
+    )
     # shaping_method = configs.get("shaping_method")
     # Move the shaping step into Experience Replay class.
     #
