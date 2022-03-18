@@ -42,15 +42,20 @@ class FetchPickAndPlaceAchieverStep(Step):
     def __init__(self, _range, subgoals):
         self.achiever = FetchPickAndPlaceAchiever(_range, subgoals)
         self.subgoal_idx = 0
+        self.reset = True
 
     def transform(self, pre_obs, pre_action, r, obs, d, info):
+        if self.reset:
+            self.subgoal_idx = 0
+            self.reset = False
+
         if obs is not None and info is not None:
 
             if self.achiever.eval(obs, self.subgoal_idx):
                 self.subgoal_idx += 1
 
             if d:
-                self.subgoal_idx = 0
+                self.reset = True
 
             info["subgoal"] = self.subgoal_idx
         return (pre_obs, pre_action, r, obs, d, info)

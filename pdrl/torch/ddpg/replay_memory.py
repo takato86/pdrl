@@ -95,7 +95,10 @@ class DynamicShapingReplayBuffer:
         self.aobs_buf[self.ptr] = self.shaper.get_current_state()
         _ = self.shaper.step(obs, act, rew, next_obs, done, info)
         # inner state of shaper transits when the `shape` method is called.
-        self.aobs2_buf[self.ptr] = self.shaper.get_current_state()
+        if not done:
+            self.aobs2_buf[self.ptr] = self.shaper.get_current_state()
+        else:
+            self.aobs2_buf[self.ptr] = self.aobs_buf[self.ptr]
 
     def sample_batch(self, batch_size=32):
         idxs = np.random.randint(0, self.size, size=batch_size)

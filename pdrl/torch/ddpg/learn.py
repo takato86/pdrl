@@ -92,7 +92,8 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
             # logger.info(ep_len, ep_ret)
             num_episodes += 1
             n_subgs = info["subgoal"]
-            avg_ep_ret, avg_ep_len, avg_is_succ, avg_subgs = mpi_avg(ep_ret), mpi_avg(ep_len), mpi_avg(is_succ), mpi_avg(n_subgs)
+            avg_ep_ret, avg_ep_len, avg_is_succ = mpi_avg(ep_ret), mpi_avg(ep_len), mpi_avg(is_succ)
+            avg_subgs = mpi_avg(n_subgs)
 
             if proc_id() == 0:
                 writer.add_scalar("Train/return", scalar_value=avg_ep_ret, global_step=num_episodes)
