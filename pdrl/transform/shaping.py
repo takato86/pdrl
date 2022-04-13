@@ -12,19 +12,22 @@ SHAPING_ALGS = {
 
 def create_shaper(configs, env_fn):
     shaping_method = configs.get("shaping_method")
-    subgoals = generate_subgoals()
-    achiever_params = configs["achiever_params"]
-    # TODO implementation by domain agnostic way.
-    achiever = FetchPickAndPlaceAchiever(
-        subgoals=subgoals,
-        **achiever_params
-    )
-    shaper = SHAPING_ALGS[shaping_method](
-        abstractor=achiever,
-        is_success=is_success,
-        **configs["shaping_params"]
-    )
-    return shaper
+    if shaping_method is not None:
+        subgoals = generate_subgoals()
+        achiever_params = configs["achiever_params"]
+        # TODO implementation by domain agnostic way.
+        achiever = FetchPickAndPlaceAchiever(
+            subgoals=subgoals,
+            **achiever_params
+        )
+        shaper = SHAPING_ALGS[shaping_method](
+            abstractor=achiever,
+            is_success=is_success,
+            **configs["shaping_params"]
+        )
+        return shaper
+    else:
+        return None
 
 
 class ShapingStep(Step):
