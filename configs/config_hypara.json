@@ -1,5 +1,5 @@
 {
-    "env_id": "SingleFetchPickAndPlace-v1",
+    "env_id": "SingleFetchPickAndPlace-v0",
     "seed": 123,
     "eval_params": {
         "num_test_episodes": 10

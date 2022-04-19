@@ -35,6 +35,7 @@ class DDPGAgent(Agent):
             torch.as_tensor(observation, dtype=torch.float32)
         )
         # gaussian noise
+        # TODO add clipping noise
         action += noise_scale * self.max_act.numpy() * np.random.randn(self.act_dim)
         # binomialは1をepsilonの確率で返す。1になった時はrandom_actが実行される。これを次元毎に。
         # epsilon-greedy
@@ -78,6 +79,12 @@ class DDPGAgent(Agent):
         mpi_avg_grad(self.actor_critic.critic)
         self.critic_optimizer.step()
 
+        loss_pi = self.update_actor(datum)
+
+        loss_q_numpy, loss_pi_numpy = loss_q.detach().numpy(), loss_pi.detach().numpy()
+        return loss_q_numpy, loss_pi_numpy, np.mean(qs, 0)
+
+    def update_actor(self, datum):
         # Freeze Critic Network
         for p in self.actor_critic.critic.parameters():
             p.requires_grad = False
@@ -92,8 +99,7 @@ class DDPGAgent(Agent):
         for p in self.actor_critic.critic.parameters():
             p.requires_grad = True
 
-        loss_q_numpy, loss_pi_numpy = loss_q.detach().numpy(), loss_pi.detach().numpy()
-        return loss_q_numpy, loss_pi_numpy, np.mean(qs, 0)
+        return loss_pi
 
     def sync_target(self):
         """Target Networkとの同期"""
@@ -101,3 +107,12 @@ class DDPGAgent(Agent):
             for p, p_target in zip(self.actor_critic.parameters(), self.target_ac.parameters()):
                 p_target.data.mul_(self.polyak)
                 p_target.data.add_((1 - self.polyak) * p.data)
+
+    def save(self, path):
+        torch.save(
+            {
+                'target_ac': self.target_ac.state_dict(),
+                'ac': self.actor_critic.state_dict()
+            },
+            path
+        )
