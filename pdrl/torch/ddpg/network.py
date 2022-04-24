@@ -3,6 +3,12 @@ import torch
 import torch.nn as nn
 
 
+def init_weights_zeros(m):
+    if isinstance(m, nn.Linear):
+        nn.init.zeros_(m.weight)
+        m.bias.data.fill_(0.0)
+
+
 class Actor(nn.Module):
     def __init__(self, d_input, d_output, act_limit):
         super(Actor, self).__init__()
@@ -40,6 +46,7 @@ class Critic(nn.Module):
             nn.Linear(256, d_output),
             nn.Identity()
         )
+        self.critic_network.apply(init_weights_zeros)
 
     def forward(self, obs, action):
         q_value = self.critic_network(torch.cat([obs, action], dim=-1))

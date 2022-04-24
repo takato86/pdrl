@@ -6,7 +6,6 @@ from gym.wrappers.record_video import RecordVideo
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from pdrl.torch.ddpg.agent import DDPGAgent
-from pdrl.torch.ddpg.replay_memory import ReplayBuffer
 from pdrl.torch.normalizer import Zscorer
 from pdrl.utils.mpi import mpi_avg, num_procs, proc_id
 
@@ -15,7 +14,7 @@ logger.setLevel(logging.INFO)
 
 
 def test(test_env, agent, normalizer, pipeline, num_test_episodes, max_ep_len):
-    ep_rets, ep_lens, is_successes = [], [], []
+    ep_rets, ep_lens, is_successes, n_subgs = [], [], [], []
 
     for _ in range(num_test_episodes):
         f_o, d, rets, is_success, ep_len = test_env.reset(), False, [], False, 0
@@ -35,14 +34,20 @@ def test(test_env, agent, normalizer, pipeline, num_test_episodes, max_ep_len):
         ep_rets.append(sum(rets))
         ep_lens.append(ep_len)
         is_successes.append(is_success)
+        n_subgs.append(info["subgoal"])
 
     # logger.info(f"test return: {ep_ret}")
     test_env.reset()
-    return mean(ep_rets), mean(ep_lens), mean(is_successes)
+    return {
+        "Test/return": mean(ep_rets),
+        "Test/steps": mean(ep_lens),
+        "Test/succ_rate": mean(is_successes),
+        "Test/n_subgs": mean(n_subgs)
+    }
 
 
-def learn(env_fn, pipeline, test_pipeline, epochs, steps_per_epoch, start_steps, update_after, update_every,
-          num_test_episodes, max_ep_len, gamma, epsilon, actor_lr, critic_lr, replay_size, polyak, l2_action,
+def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_epoch, start_steps, update_after,
+          update_every, num_test_episodes, max_ep_len, gamma, epsilon, actor_lr, critic_lr, polyak, l2_action,
           noise_scale, batch_size, norm_clip, norm_eps, clip_return, is_pos_return, logdir=None, video=False):
     env = env_fn()
     test_env = env
@@ -61,8 +66,8 @@ def learn(env_fn, pipeline, test_pipeline, epochs, steps_per_epoch, start_steps,
         polyak, l2_action, clip_return, is_pos_return, logger
     )
     normalizer = Zscorer(norm_clip, norm_eps)
-    replay_buffer = ReplayBuffer(
-        o.shape[1], env.action_space.shape[0], replay_size
+    replay_buffer = replay_buffer_fn(
+        o.shape[1], env.action_space.shape[0]
     )
 
     # 入出力の型をモジュール毎に統一したい。
@@ -76,7 +81,7 @@ def learn(env_fn, pipeline, test_pipeline, epochs, steps_per_epoch, start_steps,
 
         f_o2, r, d, info = env.step(a)
         o, a, r, o2, d, info = pipeline.transform(f_o, a, r, f_o2, d, info)
-        replay_buffer.store(o, a, r, o2, d)
+        replay_buffer.store(o, a, r, o2, d, info)
         f_o = f_o2.copy()
         o = o2.copy()
         ep_len, ep_ret = ep_len + 1, ep_ret + r
@@ -86,12 +91,15 @@ def learn(env_fn, pipeline, test_pipeline, epochs, steps_per_epoch, start_steps,
         if d or (ep_len == max_ep_len):
             # logger.info(ep_len, ep_ret)
             num_episodes += 1
+            n_subgs = info["subgoal"]
             avg_ep_ret, avg_ep_len, avg_is_succ = mpi_avg(ep_ret), mpi_avg(ep_len), mpi_avg(is_succ)
+            avg_subgs = mpi_avg(n_subgs)
 
             if proc_id() == 0:
                 writer.add_scalar("Train/return", scalar_value=avg_ep_ret, global_step=num_episodes)
                 writer.add_scalar("Train/steps", scalar_value=avg_ep_len, global_step=num_episodes)
                 writer.add_scalar("Train/succ_rate", scalar_value=avg_is_succ, global_step=num_episodes)
+                writer.add_scalar("Train/n_subgs", scalar_value=avg_subgs, global_step=num_episodes)
 
             f_o, ep_ret, ep_len, is_succ = env.reset(), 0, 0, False
             logger.debug("train reset initial obs: {}".format(o))
@@ -128,21 +136,21 @@ def learn(env_fn, pipeline, test_pipeline, epochs, steps_per_epoch, start_steps,
             epoch = (i+1) // steps_per_epoch
             # logger.info(f"Epoch {epoch}\n-------------------------------")
             # logger.info(f"return: {ep_ret}   [{i:>7d}/{int(total_steps):>7d}]")
-            test_ep_ret, test_ep_len, test_suc_rate = test(
+            score_dict = test(
                 test_env, agent, normalizer, test_pipeline, num_test_episodes, max_ep_len
             )
             # TODO Actually, suc_rate should be calculated by harmonic mean.
-            avg_test_ep_ret = mpi_avg(test_ep_ret)
-            avg_test_ep_len = mpi_avg(test_ep_len)
-            avg_test_suc_rate = mpi_avg(test_suc_rate)
+            for key, score in score_dict.items():
+                avg_score = mpi_avg(score)
 
-            if proc_id() == 0:
-                writer.add_scalar("Test/return", avg_test_ep_ret, epoch)
-                writer.add_scalar("Test/steps", avg_test_ep_len, epoch)
-                writer.add_scalar("Test/succ_rate", avg_test_suc_rate, epoch)
-            total_test_ep_ret += test_ep_ret
+                if proc_id() == 0:
+                    writer.add_scalar(key, avg_score, epoch)
+
+                if key == "Test/return":
+                    total_test_ep_ret += score
 
     if proc_id() == 0:
+        agent.save(os.path.join(writer.log_dir, "model.pth"))
         writer.close()
 
     return total_test_ep_ret

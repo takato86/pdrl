@@ -2,12 +2,14 @@ import logging
 import numpy as np
 from shaner.aggregater.entity.achiever import AbstractAchiever
 
+from pdrl.transform.pipeline import Step
+
 
 logger = logging.getLogger(__name__)
 
 
 class FetchPickAndPlaceAchiever(AbstractAchiever):
-    def __init__(self, _range, subgoals, **params):
+    def __init__(self, _range, subgoals):
         """initialize
 
         Args:
@@ -34,3 +36,26 @@ class FetchPickAndPlaceAchiever(AbstractAchiever):
         if res:
             logger.debug("Achieve the subgoal{}".format(subgoal_idx))
         return res
+
+
+class FetchPickAndPlaceAchieverStep(Step):
+    def __init__(self, _range, subgoals):
+        self.achiever = FetchPickAndPlaceAchiever(_range, subgoals)
+        self.subgoal_idx = 0
+        self.reset = True
+
+    def transform(self, pre_obs, pre_action, r, obs, d, info):
+        if self.reset:
+            self.subgoal_idx = 0
+            self.reset = False
+
+        if obs is not None and info is not None:
+
+            if self.achiever.eval(obs, self.subgoal_idx):
+                self.subgoal_idx += 1
+
+            if d:
+                self.reset = True
+
+            info["subgoal"] = self.subgoal_idx
+        return (pre_obs, pre_action, r, obs, d, info)

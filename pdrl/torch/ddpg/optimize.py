@@ -5,6 +5,8 @@ from pdrl.experiments.pick_and_place.sampler import sample_shaping_params
 from pdrl.torch.ddpg.learn import learn
 import mlflow
 from datetime import datetime
+from pdrl.torch.ddpg.replay_memory import create_replay_buffer_fn
+from pdrl.transform.shaping import create_shaper
 
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,9 @@ def optimize_hyparams(env_fn, configs):
         updated_configs["shaping_params"] = shaping_hyperparams
         pipeline = create_pipeline(updated_configs)
         test_pipeline = create_test_pipeline(updated_configs)
+        shaper = create_shaper(updated_configs, env_fn)
+        # Note that the learn method does not need the replay size argument.
+        replay_buffer_fn = create_replay_buffer_fn(shaper, logged_params.pop("replay_size"))
         params = {
             "epochs": configs["training_params"]["epochs"],
             "steps_per_epoch": configs["training_params"]["steps_per_epoch"],
@@ -51,6 +56,7 @@ def optimize_hyparams(env_fn, configs):
             "env_fn": env_fn,
             "pipeline": pipeline,
             "test_pipeline": test_pipeline,
+            "replay_buffer_fn": replay_buffer_fn,
             "logdir": "runs/optimize/" + str(datetime.now()),
             "norm_clip": configs["agent_params"]["norm_clip"],
             "norm_eps": configs["agent_params"]["norm_eps"],
