@@ -7,7 +7,6 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from pdrl.torch.ddpg.agent import DDPGAgent
 from pdrl.torch.normalizer import Zscorer
-from pdrl.torch.td3.agent import TD3Agent
 from pdrl.utils.mpi import mpi_avg, num_procs, proc_id
 
 logger = logging.getLogger(__name__)
@@ -62,7 +61,7 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
     f_o, ep_ret, ep_len, total_test_ep_ret, num_episodes, is_succ = env.reset(), 0, 0, 0, 0, False
     logger.debug("train initial obs: {}".format(f_o))
     o, _, _, _, _, _ = pipeline.transform(f_o, None, 0, None, False, None)
-    agent = TD3Agent(
+    agent = DDPGAgent(
         o, env.action_space, gamma, actor_lr, critic_lr,
         polyak, l2_action, clip_return, is_pos_return, logger
     )
