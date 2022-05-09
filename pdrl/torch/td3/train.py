@@ -6,7 +6,6 @@ from pdrl.experiments.pick_and_place.pipeline import create_test_pipeline
 from pdrl.torch.td3.learn import learn
 from pdrl.torch.ddpg.replay_memory import create_replay_buffer_fn
 from pdrl.transform.shaping import create_shaper
-from pdrl.utils.config import export_config
 from pdrl.utils.mpi import proc_id
 from pdrl.utils.file_handler import prep_dir
 
@@ -47,7 +46,11 @@ def train(env_fn, configs):
         "video": False
     }
 
-    dir_path = "runs/train"
+    if configs["debug"]:
+        dir_path = "runs/debug"
+    else:
+        dir_path = "runs/train"
+
     start_at = datetime.now()
 
     for t in range(n_runs):
@@ -58,8 +61,6 @@ def train(env_fn, configs):
             logdir = os.path.join(dir_path, dir_name)
             prep_dir(logdir)
             params["logdir"] = logdir
-            output_cfg_path = os.path.join(logdir, "config.json")
-            export_config(output_cfg_path)
 
         learn(**params)
         logger.info("END Trial {}".format(t))

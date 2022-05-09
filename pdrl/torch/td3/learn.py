@@ -8,6 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from pdrl.torch.td3.agent import TD3Agent
 from pdrl.torch.normalizer import Zscorer
 from pdrl.utils.mpi import mpi_avg, num_procs, proc_id
+from pdrl.utils.config import export_config
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -52,10 +53,12 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
     env = env_fn()
     test_env = env
 
-    if proc_id() == 0:
+    if proc_id() == 0 and logdir is not None:
         video_folder = os.path.join(logdir, "videos")
         test_env = RecordVideo(env, video_folder=video_folder) if video else env
         writer = SummaryWriter(logdir)
+        output_cfg_path = os.path.join(logdir, "config.json")
+        export_config(output_cfg_path)
 
     total_steps = steps_per_epoch * epochs // num_procs()
     f_o, ep_ret, ep_len, total_test_ep_ret, num_episodes, is_succ = env.reset(), 0, 0, 0, 0, False
