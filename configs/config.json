@@ -1,6 +1,7 @@
 {
-    "env_id": "SingleFetchPickAndPlace-v0",
+    "env_id": "SingleFetchPickAndPlace-v3",
     "seed": 123,
+    "alg": "ddpg_rnd",
     "eval_params": {
         "num_test_episodes": 10
     },
@@ -11,7 +12,7 @@
         "nruns": 1,
         "start_steps": 257,
         "steps_per_epoch": 200,
-        "epochs": 5000,
+        "epochs": 100000,
         "update_after": 256,
         "update_every": 50,
         "max_ep_len": 50
@@ -29,7 +30,7 @@
         "norm_clip": 5,
         "norm_eps": 0.01,
         "clip_return": 100,
-        "is_pos_return": false
+        "is_pos_return": true
     },
     "env_params": {
         "initial_goal_seed": 10

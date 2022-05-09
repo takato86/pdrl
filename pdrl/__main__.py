@@ -4,7 +4,7 @@ import gym
 import gym_m2s
 import torch
 import numpy as np
-from pdrl.torch.ddpg.train import train
+from pdrl.torch.ddpg_rnd.train import train
 from pdrl.torch.ddpg.optimize import optimize_hyparams
 from pdrl.utils.config import load_config
 
