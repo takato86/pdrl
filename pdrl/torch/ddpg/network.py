@@ -46,7 +46,6 @@ class Critic(nn.Module):
             nn.Linear(256, d_output),
             nn.Identity()
         )
-        self.critic_network.apply(init_weights_zeros)
 
     def forward(self, obs, action):
         q_value = self.critic_network(torch.cat([obs, action], dim=-1))

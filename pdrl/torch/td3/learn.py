@@ -5,10 +5,10 @@ from statistics import mean
 from gym.wrappers.record_video import RecordVideo
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
-from pdrl.torch.ddpg.agent import DDPGAgent
-from pdrl.torch.ddpg_rnd.agent import RNDAgent
+from pdrl.torch.td3.agent import TD3Agent
 from pdrl.torch.normalizer import Zscorer
 from pdrl.utils.mpi import mpi_avg, num_procs, proc_id
+from pdrl.utils.config import export_config
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -49,24 +49,25 @@ def test(test_env, agent, normalizer, pipeline, num_test_episodes, max_ep_len):
 
 def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_epoch, start_steps, update_after,
           update_every, num_test_episodes, max_ep_len, gamma, epsilon, actor_lr, critic_lr, polyak, l2_action,
-          noise_scale, batch_size, norm_clip, norm_eps, clip_return, is_pos_return, feature_size, rnd_lr, logdir=None, video=False):
+          noise_scale, batch_size, norm_clip, norm_eps, clip_return, is_pos_return, logdir=None, video=False):
     env = env_fn()
     test_env = env
 
-    if proc_id() == 0:
+    if proc_id() == 0 and logdir is not None:
         video_folder = os.path.join(logdir, "videos")
         test_env = RecordVideo(env, video_folder=video_folder) if video else env
         writer = SummaryWriter(logdir)
+        output_cfg_path = os.path.join(logdir, "config.json")
+        export_config(output_cfg_path)
 
     total_steps = steps_per_epoch * epochs // num_procs()
     f_o, ep_ret, ep_len, total_test_ep_ret, num_episodes, is_succ = env.reset(), 0, 0, 0, 0, False
     logger.debug("train initial obs: {}".format(f_o))
     o, _, _, _, _, _ = pipeline.transform(f_o, None, 0, None, False, None)
-    agent = DDPGAgent(
+    agent = TD3Agent(
         o, env.action_space, gamma, actor_lr, critic_lr,
         polyak, l2_action, clip_return, is_pos_return, logger
     )
-    rnd_agent = RNDAgent(o, feature_size, rnd_lr)  # move feature_size and rnd_lr into config
     normalizer = Zscorer(norm_clip, norm_eps)
     replay_buffer = replay_buffer_fn(
         o.shape[1], env.action_space.shape[0]
@@ -83,9 +84,9 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
 
         f_o2, r, d, info = env.step(a)
         o, a, r, o2, d, info = pipeline.transform(f_o, a, r, f_o2, d, info)
-        bonus = rnd_agent.act(o)
-        replay_buffer.store(o, a, r, o2, d, bonus, info)
-        f_o, o = f_o2.copy(), o2.copy()
+        replay_buffer.store(o, a, r, o2, d, info)
+        f_o = f_o2.copy()
+        o = o2.copy()
         ep_len, ep_ret = ep_len + 1, ep_ret + r
         is_succ |= bool(info["is_success"])
 
@@ -112,8 +113,6 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
             basis = (i - update_after) // update_every
             for j in range(update_every):
                 batch = replay_buffer.sample_batch(batch_size=batch_size)
-                bonus = batch.pop("bonus")
-                batch["rew"] += bonus
                 logger.debug("obs avg: {}, obs var: {}".format(torch.mean(batch["obs"], 0), torch.var(batch["obs"], 0)))
                 logger.debug("obs2 avg: {}, obs2 var: {}".format(
                     torch.mean(batch["obs2"], 0), torch.var(batch["obs2"], 0)
@@ -127,16 +126,11 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
                 ))
                 loss_q, loss_pi, max_q = agent.update(batch)
                 avg_loss_q, avg_loss_pi, avg_max_q = mpi_avg(loss_q), mpi_avg(loss_pi), mpi_avg(max_q)
-                # update rnd
-                rnd_batch = batch["obs"]
-                rnd_loss = rnd_agent.update(rnd_batch)
-                avg_rnd_loss = mpi_avg(rnd_loss)
 
                 if proc_id() == 0:
                     writer.add_scalar("Train/q_avg", avg_max_q, basis + j)
                     writer.add_scalar("Train/loss_q", avg_loss_q, basis + j)
                     writer.add_scalar("Train/loss_pi", avg_loss_pi, basis + j)
-                    writer.add_scalar("Train/loss_rnd", avg_rnd_loss, basis + j)
 
             agent.sync_target()
 
@@ -148,7 +142,7 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
             score_dict = test(
                 test_env, agent, normalizer, test_pipeline, num_test_episodes, max_ep_len
             )
-
+            # TODO Actually, suc_rate should be calculated by harmonic mean.
             for key, score in score_dict.items():
                 avg_score = mpi_avg(score)
 
