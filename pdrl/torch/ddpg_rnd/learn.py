@@ -5,12 +5,13 @@ from statistics import mean
 from gym.wrappers.record_video import RecordVideo
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
+from pdrl.utils.constants import device
 from pdrl.torch.ddpg.agent import DDPGAgent
 from pdrl.torch.ddpg_rnd.agent import RNDAgent
 from pdrl.torch.normalizer import Zscorer
 from pdrl.utils.mpi import mpi_avg, num_procs, proc_id
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
@@ -19,7 +20,6 @@ def test(test_env, agent, normalizer, pipeline, num_test_episodes, max_ep_len):
 
     for _ in range(num_test_episodes):
         f_o, d, rets, is_success, ep_len = test_env.reset(), False, [], False, 0
-        logger.debug("test reset initial obs: {}".format(f_o))
         o, _, _, _, _, _ = pipeline.transform(f_o, None, 0, None, False, None)
 
         while(not d and (ep_len < max_ep_len) and not is_success):
@@ -60,7 +60,6 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
 
     total_steps = steps_per_epoch * epochs // num_procs()
     f_o, ep_ret, ep_len, total_test_ep_ret, num_episodes, is_succ = env.reset(), 0, 0, 0, 0, False
-    logger.debug("train initial obs: {}".format(f_o))
     o, _, _, _, _, _ = pipeline.transform(f_o, None, 0, None, False, None)
     agent = DDPGAgent(
         o, env.action_space, gamma, actor_lr, critic_lr,
@@ -104,32 +103,31 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
                 writer.add_scalar("Train/n_subgs", scalar_value=avg_subgs, global_step=num_episodes)
 
             f_o, ep_ret, ep_len, is_succ = env.reset(), 0, 0, False
-            logger.debug("train reset initial obs: {}".format(o))
             o, _, r, _,  d, _ = pipeline.transform(f_o, None, 0, None, False, None)
 
         # Update handling
         if i >= update_after and i % update_every == 0:
+            logger.debug("Start to learn from experiences.")
             basis = (i - update_after) // update_every
             for j in range(update_every):
+                logger.debug("Getting experiences...")
                 batch = replay_buffer.sample_batch(batch_size=batch_size)
+                logger.debug("Got experiences!")
                 bonus = batch.pop("bonus")
                 batch["rew"] += bonus
-                logger.debug("obs avg: {}, obs var: {}".format(torch.mean(batch["obs"], 0), torch.var(batch["obs"], 0)))
-                logger.debug("obs2 avg: {}, obs2 var: {}".format(
-                    torch.mean(batch["obs2"], 0), torch.var(batch["obs2"], 0)
-                ))
-                logger.debug("act avg: {}, act var: {}".format(torch.mean(batch["act"], 0), torch.var(batch["act"], 0)))
-                batch["obs"] = normalizer(batch["obs"])
-                batch["obs2"] = normalizer(batch["obs2"])
-                logger.debug("obs avg: {}, obs var: {}".format(torch.mean(batch["obs"], 0), torch.var(batch["obs"], 0)))
-                logger.debug("obs2 avg: {}, obs2 var: {}".format(
-                    torch.mean(batch["obs2"], 0), torch.var(batch["obs2"], 0)
-                ))
+                logger.debug("Normalize observations...")
+                batch["obs"] = normalizer(batch["obs"].cpu()).to(device)
+                batch["obs2"] = normalizer(batch["obs2"].cpu()).to(device)
+                logger.debug("Normalized observations!")
+                logger.debug("Updating...")
                 loss_q, loss_pi, max_q = agent.update(batch)
+                logger.debug("Updated!")
                 avg_loss_q, avg_loss_pi, avg_max_q = mpi_avg(loss_q), mpi_avg(loss_pi), mpi_avg(max_q)
                 # update rnd
                 rnd_batch = batch["obs"]
+                logger.debug("Updating RND...")
                 rnd_loss = rnd_agent.update(rnd_batch)
+                logger.debug("Updated RND!")
                 avg_rnd_loss = mpi_avg(rnd_loss)
 
                 if proc_id() == 0:
@@ -139,10 +137,12 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
                     writer.add_scalar("Train/loss_rnd", avg_rnd_loss, basis + j)
 
             agent.sync_target()
+            logger.debug("Finish to learn from experiences.")
 
         # End of epoch handling
         if (i+1) % steps_per_epoch == 0:
             epoch = (i+1) // steps_per_epoch
+            logger.debug(f"Finish epoch: {epoch}.")
             # logger.info(f"Epoch {epoch}\n-------------------------------")
             # logger.info(f"return: {ep_ret}   [{i:>7d}/{int(total_steps):>7d}]")
             score_dict = test(

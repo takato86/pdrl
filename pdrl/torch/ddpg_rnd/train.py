@@ -49,7 +49,11 @@ def train(env_fn, configs):
         "video": False
     }
 
-    dir_path = "runs/train"
+    if configs["debug"]:
+        dir_path = "runs/debug"
+    else:
+        dir_path = "runs/train"
+
     start_at = datetime.now()
 
     for t in range(n_runs):

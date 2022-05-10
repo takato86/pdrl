@@ -61,4 +61,4 @@ class ActorCritic(nn.Module):
 
     def act(self, obs):
         with torch.no_grad():
-            return self.actor(obs).numpy()
+            return self.actor(obs).cpu().numpy()

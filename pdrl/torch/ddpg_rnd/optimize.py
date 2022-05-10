@@ -9,7 +9,7 @@ from pdrl.torch.ddpg_rnd.replay_memory import create_replay_buffer_fn
 from pdrl.transform.shaping import create_shaper
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 def optimize_hyparams(env_fn, configs):

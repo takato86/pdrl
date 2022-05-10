@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from pdrl.utils.constants import device
 
 
 def create_replay_buffer_fn(shaper, size):
@@ -69,7 +70,7 @@ class ReplayBuffer:
             bonus=self.bonus_buf[idxs]
         )
         return {
-            k: torch.as_tensor(v, dtype=torch.float32)
+            k: torch.as_tensor(v, dtype=torch.float32, device=device)
             for k, v in batch.items()
         }
 
@@ -83,7 +84,7 @@ class DynamicShapingReplayBuffer:
         self.basis_rb = ReplayBuffer(obs_dim, act_dim, size)
         self.aobs_buf = np.zeros(size, dtype=np.float32)
         self.aobs2_buf = np.zeros(size, dtype=np.float32)
-        self.shaper = shaper
+        self.shaper, self.size = shaper, size
 
     def store(self, obs, act, rew, next_obs, done, bonus, info):
         self.basis_rb.store(obs, act, rew, next_obs, done, bonus, info)
@@ -104,5 +105,5 @@ class DynamicShapingReplayBuffer:
             shaping[i] = self.shaper.shape(aobs, aobs2)
 
         batch = self.basis_rb.sample_batch(batch_size)
-        batch["rew"] += torch.as_tensor(shaping, dtype=torch.float32)
+        batch["rew"] += torch.as_tensor(shaping, dtype=torch.float32, device=device)
         return batch
