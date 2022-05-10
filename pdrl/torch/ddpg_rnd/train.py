@@ -3,8 +3,8 @@ import os
 from datetime import datetime
 from pdrl.experiments.pick_and_place.pipeline import create_pipeline
 from pdrl.experiments.pick_and_place.pipeline import create_test_pipeline
-from pdrl.torch.ddpg.learn import learn
-from pdrl.torch.ddpg.replay_memory import create_replay_buffer_fn
+from pdrl.torch.ddpg_rnd.learn import learn
+from pdrl.torch.ddpg_rnd.replay_memory import create_replay_buffer_fn
 from pdrl.transform.shaping import create_shaper
 from pdrl.utils.config import export_config
 from pdrl.utils.mpi import proc_id
@@ -20,7 +20,6 @@ def train(env_fn, configs):
     test_pipeline = create_test_pipeline(configs)
     shaper = create_shaper(configs, env_fn)
     replay_buffer_fn = create_replay_buffer_fn(shaper, configs["agent_params"]["replay_size"])
-
     params = {
         "env_fn": env_fn,
         "pipeline": pipeline,
@@ -45,10 +44,16 @@ def train(env_fn, configs):
         "norm_eps": configs["agent_params"]["norm_eps"],
         "clip_return": configs["agent_params"]["clip_return"],
         "is_pos_return": configs["agent_params"]["is_pos_return"],
+        "feature_size": configs["agent_params"]["feature_size"],
+        "rnd_lr": configs["agent_params"]["rnd_lr"],
         "video": False
     }
 
-    dir_path = "runs/train"
+    if configs["debug"]:
+        dir_path = "runs/debug"
+    else:
+        dir_path = "runs/train"
+
     start_at = datetime.now()
 
     for t in range(n_runs):

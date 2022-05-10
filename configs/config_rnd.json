@@ -12,16 +12,27 @@
         "nruns": 1,
         "start_steps": 257,
         "steps_per_epoch": 200,
-        "epochs": 400,
+        "epochs": 100000,
         "update_after": 256,
         "update_every": 50,
         "max_ep_len": 50
     },
     "agent_params": {
+        "gamma": 0.999,
+        "actor_lr": 0.001,
+        "critic_lr": 0.0001,
+        "polyak": 0.95,
+        "l2_action": 1.0,
+        "replay_size": 10000,
+        "noise_scale": 0.2,
+        "batch_size": 1024,
+        "epsilon": 0.4,
         "norm_clip": 5,
         "norm_eps": 0.01,
         "clip_return": 100,
-        "is_pos_return": true
+        "is_pos_return": true,
+        "feature_size": 256,
+        "rnd_lr": 0.01
     },
     "env_params": {
         "initial_goal_seed": 10

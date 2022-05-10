@@ -8,13 +8,6 @@ from pdrl.torch import TRAIN_FNS, OPTIMIZE_FNS
 from pdrl.utils.config import load_config
 
 gym_m2s
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(filename)s %(funcName)s() L%(lineno)d: %(message)s",
-    filename="out.log"
-)
-logger = logging.getLogger()
-
 
 def main(configs):
     torch.backends.cudnn.benchmark = True
@@ -53,4 +46,19 @@ if __name__ == "__main__":
     args = parser.parse_args()
     configs = load_config(args.config)
     configs["debug"] = args.debug
+    level = logging.DEBUG
+
+    if not args.debug:
+        # ignore FutureWarning not in debugging.
+        import warnings
+        warnings.simplefilter('ignore', FutureWarning)
+        level = logging.INFO
+
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)s %(filename)s %(funcName)s() L%(lineno)d: %(message)s",
+        filename="out.log"
+    )
+    logger = logging.getLogger()
+
     main(configs)
