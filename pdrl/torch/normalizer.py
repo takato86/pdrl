@@ -1,5 +1,7 @@
 import numpy as np
 from pdrl.utils.mpi import mpi_sum, num_procs
+from pdrl.utils.constants import device
+import torch
 
 
 class Normalizer:
@@ -17,14 +19,20 @@ class Zscorer(Normalizer):
         self.count_obs = 0
 
     def __call__(self, obs):
+        input_type = type(obs)
+
+        if input_type == torch.Tensor:
+            obs = obs.cpu().numpy()
+
         self._sync(obs)
         z = (obs - self._mean()) / self._std()
         clipped_z = np.clip(z, a_min=-self.norm_clip, a_max=self.norm_clip)
-        if type(obs) == np.ndarray:
+
+        if input_type == np.ndarray:
             return clipped_z
         else:
             # torch.Double型に変換されることを防ぐ
-            return clipped_z.float()
+            return torch.as_tensor(clipped_z, dtype=torch.float32, device=device)
 
     def _mean(self):
         return self.sum_obs / self.count_obs
