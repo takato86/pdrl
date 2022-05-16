@@ -1,6 +1,5 @@
 import logging
 import os
-import torch
 from statistics import mean
 from gym.wrappers.record_video import RecordVideo
 from tqdm import tqdm
@@ -49,7 +48,8 @@ def test(test_env, agent, normalizer, pipeline, num_test_episodes, max_ep_len):
 
 def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_epoch, start_steps, update_after,
           update_every, num_test_episodes, max_ep_len, gamma, epsilon, actor_lr, critic_lr, polyak, l2_action,
-          noise_scale, batch_size, norm_clip, norm_eps, clip_return, is_pos_return, feature_size, rnd_lr, logdir=None, video=False):
+          noise_scale, batch_size, norm_clip, norm_eps, clip_return, is_pos_return, feature_size, rnd_lr, logdir=None,
+          video=False):
     env = env_fn()
     test_env = env
 
