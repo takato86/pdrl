@@ -9,6 +9,7 @@ from pdrl.utils.config import load_config
 
 gym_m2s
 
+
 def main(configs):
     torch.backends.cudnn.benchmark = True
     env_name = configs["env_id"]
@@ -25,7 +26,7 @@ def main(configs):
         return env
 
     env_fn = create_env
-    
+
     if alg not in TRAIN_FNS or alg not in OPTIMIZE_FNS:
         logger.error(f"Not implement alg: {alg}")
         raise NotImplementedError

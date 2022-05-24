@@ -37,6 +37,13 @@
     "env_params": {
         "initial_goal_seed": 10
     },
+    "shaping_method": "static",
+    "shaping_params": {
+        "gamma": 0.9,
+        "eta": 1,
+        "rho": 0,
+        "aggr_id": "dta"
+    },
     "achiever_params": {
         "_range": [0.07, 0.07, 0.07, 0.005, 0.005]
     }

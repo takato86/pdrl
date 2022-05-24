@@ -1,6 +1,10 @@
+import logging
 import numpy as np
 import torch
 from pdrl.utils.constants import device
+
+
+logger = logging.getLogger()
 
 
 def create_replay_buffer_fn(shaper, size):
@@ -19,10 +23,15 @@ def create_replay_buffer_fn(shaper, size):
         """
         if shaper is None:
             # Case without shaping
+            logger.info("Replay Buffer is selected.")
             replay_buffer = ReplayBuffer(obs_dim, act_dim, size)
-        else:
+        elif shaper.is_learn:
             # Case with shaping
+            logger.info("Dynamic Shaping Replay Buffer is selected.")
             replay_buffer = DynamicShapingReplayBuffer(obs_dim, act_dim, size, shaper)
+        else:
+            logger.info("Static Shaping Replay Buffer is selected.")
+            replay_buffer = StaticShapingReplayBuffer(obs_dim, act_dim, size, shaper)
 
         return replay_buffer
 
@@ -63,6 +72,30 @@ class ReplayBuffer:
                      obs2=self.obs2_buf[idxs],
                      act=self.act_buf[idxs],
                      rew=self.rew_buf[idxs],
+                     done=self.done_buf[idxs])
+        return {
+            k: torch.as_tensor(v, dtype=torch.float32, device=device)
+            for k, v in batch.items()
+        }
+
+
+class StaticShapingReplayBuffer(ReplayBuffer):
+    def __init__(self, obs_dim, act_dim, size, shaper):
+        super().__init__(obs_dim, act_dim, size)
+        self.shaper = shaper
+
+    def sample_batch(self, batch_size=32):
+        idxs = np.random.randint(0, self.size, size=batch_size)
+        shaping = np.zeros(batch_size)
+
+        # shapingの報酬値計算
+        for i, (aobs, aobs2) in enumerate(zip(self.obs_buf[idxs], self.obs2_buf[idxs])):
+            shaping[i] = self.shaper.shape(aobs, aobs2)
+
+        batch = dict(obs=self.obs_buf[idxs],
+                     obs2=self.obs2_buf[idxs],
+                     act=self.act_buf[idxs],
+                     rew=self.rew_buf[idxs] + shaping,
                      done=self.done_buf[idxs])
         return {
             k: torch.as_tensor(v, dtype=torch.float32, device=device)

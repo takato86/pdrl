@@ -22,6 +22,20 @@ def sample_dta_params(trial):
     return hyperparams
 
 
+def smaple_static_params(trial):
+    hyperparams = {
+        "gamma": trial.user_attrs["GAMMA"],
+        "aggr_id": "dta",
+        "eta": trial.suggest_categorical(
+            "eta", [0.001, 0.01, 0.1, 1, 10, 100]
+        ),
+        "rho": 0
+    }
+    return hyperparams
+
+
 HYPERPARAMETER_SAMPLER = {
-    "dta": sample_dta_params
+    "dta": sample_dta_params,
+    "nrs": smaple_static_params,
+    "static": smaple_static_params
 }

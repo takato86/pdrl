@@ -7,6 +7,7 @@ logger = logging.getLogger()
 
 p_id = proc_id()
 n_devices = torch.cuda.device_count()
+
 if torch.cuda.is_available():
     gpu_no = p_id % n_devices
     device = torch.device(f"cuda:{gpu_no}")
