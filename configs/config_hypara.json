@@ -26,6 +26,7 @@
     "env_params": {
         "initial_goal_seed": 10
     },
+    "subgoal_type": "human",
     "achiever_params": {
         "_range": [0.07, 0.07, 0.07, 0.005, 0.005]
     }

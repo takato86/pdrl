@@ -18,14 +18,14 @@
         "max_ep_len": 50
     },
     "agent_params": {
-        "gamma": 0.9,
+        "gamma": 0.98,
         "actor_lr": 0.0001,
         "critic_lr": 0.0001,
         "polyak": 0.92,
-        "l2_action": 0.8,
-        "replay_size": 100000,
-        "noise_scale": 0.2,
-        "batch_size": 512,
+        "l2_action": 0.5,
+        "replay_size": 10000,
+        "noise_scale": 0.01,
+        "batch_size": 256,
         "epsilon": 0.3,
         "norm_clip": 5,
         "norm_eps": 0.01,
@@ -37,20 +37,13 @@
     "env_params": {
         "initial_goal_seed": 10
     },
-    "shaping_method": "dta",
+    "shaping_method": "static",
     "shaping_params": {
-        "gamma": 0.9,
-        "lr": 0.01,
-        "aggr_id": "dta",
-        "vid": "table",
-        "values": {
-            "0": 0.1,
-            "1": 0.3,
-            "2": 0.5
-        }
+        "gamma": 0.98,
+        "eta": 0.001,
+        "rho": 0,
+        "aggr_id": "dta"
     },
-
-    "subgoal_type": "human",
     "achiever_params": {
         "_range": [0.07, 0.07, 0.07, 0.005, 0.005]
     }
