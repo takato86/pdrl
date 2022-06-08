@@ -14,7 +14,10 @@ logger = logging.getLogger(__name__)
 
 def optimize_hyparams(env_fn, configs):
     logger.info("OPTIMIZE HYPAPER PARAMETERS.")
-    experiment_id = mlflow.create_experiment("DDPG Hyperparameter Tuning Experiment-{}".format(datetime.now()))
+    experiment_id = mlflow.create_experiment(
+        "{}-{}-{}".format(configs["env_id"], configs["alg"], datetime.now()),
+        tags=configs
+    )
     n_trials = configs["hypara_optimization_params"]["n_trials"]
     max_ep_len = configs["training_params"]["max_ep_len"]
     shaping_method = configs.get("shaping_method")
