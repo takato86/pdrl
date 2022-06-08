@@ -12,7 +12,8 @@ logger = logging.getLogger()
 SHAPING_ALGS = {
     "dta": shaner.SarsaRS,
     "nrs": shaner.NaiveSRS,
-    "static": shaner.SubgoalRS
+    "static": shaner.SubgoalRS,
+    "linrs": shaner.LinearNaiveSRS
 }
 
 
