@@ -37,5 +37,6 @@ def smaple_static_params(trial):
 HYPERPARAMETER_SAMPLER = {
     "dta": sample_dta_params,
     "nrs": smaple_static_params,
+    "linrs": smaple_static_params,
     "static": smaple_static_params
 }
