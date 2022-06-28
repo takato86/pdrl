@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from shaner.aggregater.entity.achiever import AbstractAchiever
+from shaper.achiever import AbstractAchiever
 
 from pdrl.transform.pipeline import Step
 
@@ -18,12 +18,16 @@ class FetchPickAndPlaceAchiever(AbstractAchiever):
             subgs (np.ndarray): subgoal numpy list.
         """
         self._range = _range
-        self.subgoals = subgoals
+        self._subgoals = subgoals
+
+    @property
+    def subgoals(self):
+        return self._subgoals
 
     def eval(self, obs, subgoal_idx):
-        if len(self.subgoals) <= subgoal_idx:
+        if len(self._subgoals) <= subgoal_idx:
             return False
-        subgoal = np.array(self.subgoals[subgoal_idx])
+        subgoal = np.array(self._subgoals[subgoal_idx])
         # idxs = np.argwhere(subgoal == subgoal) # np.nanでない要素を取り出し
         target_v = subgoal[6:11]
         target_obs = obs[:, 6:11]
