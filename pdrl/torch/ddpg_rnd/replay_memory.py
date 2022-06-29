@@ -88,11 +88,11 @@ class DynamicShapingReplayBuffer:
 
     def store(self, obs, act, rew, next_obs, done, bonus, info):
         self.basis_rb.store(obs, act, rew, next_obs, done, bonus, info)
-        self.aobs_buf[self.basis_rb.ptr] = self.shaper.get_current_state()
+        self.aobs_buf[self.basis_rb.ptr] = self.shaper.current_state
         _ = self.shaper.step(obs, act, rew, next_obs, done, info)
         # inner state of shaper transits when the `shape` method is called.
         if not done:
-            self.aobs2_buf[self.basis_rb.ptr] = self.shaper.get_current_state()
+            self.aobs2_buf[self.basis_rb.ptr] = self.shaper.current_state
         else:
             self.aobs2_buf[self.basis_rb.ptr] = self.aobs_buf[self.basis_rb.ptr]
 
