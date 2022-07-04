@@ -6,6 +6,7 @@ import torch
 import numpy as np
 from pdrl.torch import TRAIN_FNS, OPTIMIZE_FNS
 from pdrl.utils.config import load_config
+import random
 
 gym_m2s
 
@@ -19,6 +20,7 @@ def main(configs):
     alg = configs["alg"]
     torch.manual_seed(seed)
     np.random.seed(seed)
+    random.seed(seed)
 
     def create_env():
         env = gym.make(env_name, **env_params)
