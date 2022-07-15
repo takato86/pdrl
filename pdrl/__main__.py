@@ -8,11 +8,12 @@ from pdrl.torch import TRAIN_FNS, OPTIMIZE_FNS
 from pdrl.utils.config import load_config
 import random
 
+
 gym_m2s
 
 
 def main(configs):
-    torch.backends.cudnn.benchmark = True
+    # torch.backends.cudnn.benchmark = True
     env_name = configs["env_id"]
     env_params = configs["env_params"]
     # Fix seed
