@@ -4,6 +4,7 @@ from statistics import mean
 from gym.wrappers.record_video import RecordVideo
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
+from pdrl.torch.ddpg_rnd.replay_memory import DynamicShapingReplayBuffer
 from pdrl.utils.constants import device
 from pdrl.torch.ddpg.agent import DDPGAgent
 from pdrl.torch.ddpg_rnd.agent import RNDAgent
@@ -122,19 +123,25 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
                 logger.debug("Updating...")
                 loss_q, loss_pi, max_q = agent.update(batch)
                 logger.debug("Updated!")
-                avg_loss_q, avg_loss_pi, avg_max_q = mpi_avg(loss_q), mpi_avg(loss_pi), mpi_avg(max_q)
                 # update rnd
                 rnd_batch = batch["obs"]
                 logger.debug("Updating RND...")
                 rnd_loss = rnd_agent.update(rnd_batch)
                 logger.debug("Updated RND!")
-                avg_rnd_loss = mpi_avg(rnd_loss)
 
-                if proc_id() == 0:
-                    writer.add_scalar("Train/q_avg", avg_max_q, basis + j)
-                    writer.add_scalar("Train/loss_q", avg_loss_q, basis + j)
-                    writer.add_scalar("Train/loss_pi", avg_loss_pi, basis + j)
-                    writer.add_scalar("Train/loss_rnd", avg_rnd_loss, basis + j)
+                if (basis + j) % steps_per_epoch == 0:
+                    n_records = (basis + j) // steps_per_epoch
+                    avg_loss_q, avg_loss_pi, avg_max_q = mpi_avg(loss_q), mpi_avg(loss_pi), mpi_avg(max_q)
+                    avg_rnd_loss = mpi_avg(rnd_loss)
+                    if proc_id() == 0:
+                        writer.add_scalar("Train/q_avg", avg_max_q, n_records)
+                        writer.add_scalar("Train/loss_q", avg_loss_q, n_records)
+                        writer.add_scalar("Train/loss_pi", avg_loss_pi, n_records)
+                        writer.add_scalar("Train/loss_rnd", avg_rnd_loss, n_records)
+
+                        if type(replay_buffer) == DynamicShapingReplayBuffer:
+                            values = {str(key): value for key, value in replay_buffer.shaper.vfunc.state_dict().items()}
+                            writer.add_scalars("Train/potentials", values, n_records)
 
             agent.sync_target()
             logger.debug("Finish to learn from experiences.")
