@@ -17,7 +17,7 @@ def create_aggregator(configs):
         subgoals=subgoals,
         **achiever_params
     )
-    aggregator = DynamicTrajectoryAggregation(achiever)
+    aggregator = DynamicTrajectoryAggregation(achiever, is_success)
     return aggregator
 
 

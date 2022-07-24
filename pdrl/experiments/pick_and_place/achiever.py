@@ -9,12 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 class FetchPickAndPlaceAchiever(AbstractAchiever):
-    def __init__(self, _range, subgoals):
+    def __init__(self, _range: float, subgoals: np.ndarray):
         """initialize
 
         Args:
             _range (float): the range to judge whether achieving subgoals.
-            n_obs (int): the dimension size of observations
             subgs (np.ndarray): subgoal numpy list.
         """
         self._range = _range
@@ -26,7 +25,9 @@ class FetchPickAndPlaceAchiever(AbstractAchiever):
 
     def eval(self, obs, subgoal_idx):
         if len(self._subgoals) <= subgoal_idx:
+            # すべてのサブゴールを達成していたら常にFalse
             return False
+
         subgoal = np.array(self._subgoals[subgoal_idx])
         # idxs = np.argwhere(subgoal == subgoal) # np.nanでない要素を取り出し
         target_v = subgoal[6:11]
