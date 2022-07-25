@@ -3,7 +3,7 @@ import shaper
 from shaper.aggregator.subgoal_based import DynamicTrajectoryAggregation
 from pdrl.transform.pipeline import Step
 from pdrl.experiments.pick_and_place.subgoal import subgoal_generator_factory
-from pdrl.experiments.pick_and_place.is_success import is_success
+from pdrl.experiments.pick_and_place.is_success import is_success, is_success4sarsa_rs
 from pdrl.experiments.pick_and_place.achiever import FetchPickAndPlaceAchiever
 
 
@@ -27,7 +27,7 @@ def create_dta(configs):
     lr = shaping_configs["lr"]
     aggregator = create_aggregator(configs)
     vfunc = aggregator.create_vfunc(shaping_configs.get("values"))
-    return shaper.SarsaRS(gamma, lr, aggregator, vfunc, is_success)
+    return shaper.SarsaRS(gamma, lr, aggregator, vfunc, is_success4sarsa_rs)
 
 
 def create_nrs(configs):
