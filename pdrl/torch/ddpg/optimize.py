@@ -7,6 +7,7 @@ import mlflow
 from datetime import datetime
 from pdrl.torch.ddpg.replay_memory import create_replay_buffer_fn
 from pdrl.transform.shaping import create_shaper
+import torch
 
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,13 @@ logger = logging.getLogger(__name__)
 
 def optimize_hyparams(env_fn, configs):
     logger.info("OPTIMIZE HYPAPER PARAMETERS.")
+    torch.backends.cudnn.benchmark = True
+    torch.autograd.detect_anomaly = False
+    torch.autograd.set_detect_anomaly = False
+    torch.autograd.profiler.profile = False
+    torch.autograd.profiler.emit_nvtx = False
+    torch.autograd.gradcheck = False
+    torch.autograd.gradgradcheck = False
     experiment_id = mlflow.create_experiment(
         "{}-{}-{}".format(configs["env_id"], configs["alg"], datetime.now()),
         tags=configs

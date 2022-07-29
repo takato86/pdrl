@@ -40,6 +40,19 @@ def optimize_hyparams(env_fn, configs):
             "feature_size": trial.suggest_categorical("feature_size", [32, 64, 128, 256, 512]),
             "rnd_lr": trial.suggest_categorical("rnd_lr", [0.01, 0.001, 0.0001, 0.005, 0.01, 0.00001])
         }
+        # logged_params = {
+        #     "batch_size": 512,
+        #     "epsilon": 0.3,
+        #     "gamma": gamma,
+        #     "actor_lr": 0.0001,
+        #     "critic_lr": 0.0001,
+        #     "replay_size": int(1E5),
+        #     "polyak": 0.92,
+        #     "l2_action": 0.8,
+        #     "noise_scale": 0.2,
+        #     "feature_size": 128,
+        #     "rnd_lr": 0.01
+        # }
         trial.set_user_attr("GAMMA", gamma)
         shaping_hyperparams = sample_shaping_params(trial, shaping_method)
         mlflow.log_params({**logged_params, **shaping_hyperparams})

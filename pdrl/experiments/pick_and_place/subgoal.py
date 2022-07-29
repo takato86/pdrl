@@ -10,6 +10,7 @@ def generate_subgoals():
     subgoal2 = np.full(28, np.nan)
     # subgoal2[6:9] = [0, 0, 0]
     subgoal2[6:11] = [0, 0, 0, 0.02, 0.02]
+    # distance_threshold = 0.05
     return [subgoal1, subgoal2]
 
 

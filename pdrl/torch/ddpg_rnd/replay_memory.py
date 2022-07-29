@@ -104,6 +104,15 @@ class DynamicShapingReplayBuffer:
         for i, (aobs, aobs2) in enumerate(zip(self.aobs_buf[idxs], self.aobs2_buf[idxs])):
             shaping[i] = self.shaper.shape(aobs, aobs2)
 
-        batch = self.basis_rb.sample_batch(batch_size)
-        batch["rew"] += torch.as_tensor(shaping, dtype=torch.float32, device=device)
-        return batch
+        batch = dict(
+            obs=self.basis_rb.obs_buf[idxs],
+            obs2=self.basis_rb.obs2_buf[idxs],
+            act=self.basis_rb.act_buf[idxs],
+            rew=self.basis_rb.rew_buf[idxs] + shaping,
+            done=self.basis_rb.done_buf[idxs],
+            bonus=self.basis_rb.bonus_buf[idxs]
+        )
+        return {
+            k: torch.as_tensor(v, dtype=torch.float32, device=device)
+            for k, v in batch.items()
+        }
