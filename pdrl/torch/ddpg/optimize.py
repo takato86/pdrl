@@ -81,7 +81,11 @@ def optimize_hyparams(env_fn, configs):
         mlflow.end_run()
         return perf
 
-    study = optuna.create_study(direction="maximize")
+    study = optuna.create_study(
+        study_name="example-study",
+        storage="mysql+pymysql://root:test@localhost/optunatest",
+        direction="maximize"
+    )
     study.optimize(objective, n_trials=n_trials)
     best_params = study.best_params
     logger.info(best_params)
