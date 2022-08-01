@@ -1,18 +1,19 @@
 {
-    "env_id": "SingleFetchPickAndPlace-v2",
+    "device": "cuda:1",
+    "env_id": "SingleFetchPickAndPlace-v3",
     "seed": 123,
-    "alg": "ddpg",
+    "alg": "ddpg_rnd",
     "eval_params": {
         "num_test_episodes": 10
     },
     "hypara_optimization_params": {
-        "n_trials": 200
+        "n_trials": 25
     },
     "training_params": {
         "nruns": 1,
         "start_steps": 257,
         "steps_per_epoch": 200,
-        "epochs": 400,
+        "epochs": 1000,
         "update_after": 256,
         "update_every": 50,
         "max_ep_len": 50

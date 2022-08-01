@@ -13,7 +13,7 @@ class DDPGAgent(Agent):
     def __init__(self, observation_space, action_space, gamma, actor_lr, critic_lr, polyak, l2_action, clip_return,
                  is_pos_return, logger):
         self.gamma = gamma
-        self.actor_critic = ActorCritic(observation_space, action_space).to(device)
+        self.actor_critic = ActorCritic(observation_space, action_space).to(device())
         # MPIプロセス間で重みを共通化
         sync_params(self.actor_critic.actor)
         sync_params(self.actor_critic.critic)
@@ -22,7 +22,7 @@ class DDPGAgent(Agent):
         self.critic_optimizer = Adam(self.actor_critic.critic.parameters(), lr=critic_lr)
         self.polyak = polyak
         self.act_dim = action_space.shape[0]
-        self.max_act_tensor = torch.Tensor(action_space.high).to(device)
+        self.max_act_tensor = torch.Tensor(action_space.high).to(device())
         self.max_act = action_space.high
         self.logger = logger
         self.l2_action = l2_action
@@ -34,7 +34,7 @@ class DDPGAgent(Agent):
 
     def act(self, observation, noise_scale, epsilon):
         action = self.actor_critic.act(
-            torch.as_tensor(observation, dtype=torch.float32, device=device)
+            torch.as_tensor(observation, dtype=torch.float32, device=device())
         )
         # gaussian noise
         # TODO add clipping noise

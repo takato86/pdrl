@@ -74,7 +74,7 @@ class ReplayBuffer:
                      rew=self.rew_buf[idxs],
                      done=self.done_buf[idxs])
         return {
-            k: torch.as_tensor(v, dtype=torch.float32, device=device)
+            k: torch.as_tensor(v, dtype=torch.float32, device=device())
             for k, v in batch.items()
         }
 
@@ -98,7 +98,7 @@ class StaticShapingReplayBuffer(ReplayBuffer):
                      rew=self.rew_buf[idxs] + shaping,
                      done=self.done_buf[idxs])
         return {
-            k: torch.as_tensor(v, dtype=torch.float32, device=device)
+            k: torch.as_tensor(v, dtype=torch.float32, device=device())
             for k, v in batch.items()
         }
 
@@ -148,6 +148,6 @@ class DynamicShapingReplayBuffer:
                      rew=self.rew_buf[idxs] + shaping,
                      done=self.done_buf[idxs])
         return {
-            k: torch.as_tensor(v, dtype=torch.float32, device=device)
+            k: torch.as_tensor(v, dtype=torch.float32, device=device())
             for k, v in batch.items()
         }

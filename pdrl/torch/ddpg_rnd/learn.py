@@ -117,8 +117,8 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
                 bonus = batch.pop("bonus")
                 batch["rew"] += bonus
                 logger.debug("Normalize observations...")
-                batch["obs"] = normalizer(batch["obs"].cpu()).to(device)
-                batch["obs2"] = normalizer(batch["obs2"].cpu()).to(device)
+                batch["obs"] = normalizer(batch["obs"].cpu()).to(device())
+                batch["obs2"] = normalizer(batch["obs2"].cpu()).to(device())
                 logger.debug("Normalized observations!")
                 logger.debug("Updating...")
                 loss_q, loss_pi, max_q = agent.update(batch)

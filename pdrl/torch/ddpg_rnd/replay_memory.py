@@ -70,7 +70,7 @@ class ReplayBuffer:
             bonus=self.bonus_buf[idxs]
         )
         return {
-            k: torch.as_tensor(v, dtype=torch.float32, device=device)
+            k: torch.as_tensor(v, dtype=torch.float32, device=device())
             for k, v in batch.items()
         }
 
@@ -113,6 +113,6 @@ class DynamicShapingReplayBuffer:
             bonus=self.basis_rb.bonus_buf[idxs]
         )
         return {
-            k: torch.as_tensor(v, dtype=torch.float32, device=device)
+            k: torch.as_tensor(v, dtype=torch.float32, device=device())
             for k, v in batch.items()
         }

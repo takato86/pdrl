@@ -1,5 +1,6 @@
 import logging
 import optuna
+import torch
 from pdrl.experiments.pick_and_place.pipeline import create_pipeline, create_test_pipeline
 from pdrl.experiments.pick_and_place.sampler import sample_shaping_params
 from pdrl.torch.ddpg_rnd.learn import learn
@@ -7,12 +8,15 @@ import mlflow
 from datetime import datetime
 from pdrl.torch.ddpg_rnd.replay_memory import create_replay_buffer_fn
 from pdrl.transform.shaping import create_shaper
+from pdrl.utils.constants import set_device
 
 
 logger = logging.getLogger()
 
 
 def optimize_hyparams(env_fn, configs):
+    local_device = torch.device(configs["device"])
+    set_device(local_device)
     logger.info("OPTIMIZE HYPAPER PARAMETERS.")
     experiment_id = mlflow.create_experiment(
         "{}-{}-{}".format(configs["env_id"], configs["alg"], datetime.now()),
@@ -88,7 +92,12 @@ def optimize_hyparams(env_fn, configs):
         mlflow.end_run()
         return perf
 
-    study = optuna.create_study(direction="maximize")
+    study = optuna.create_study(
+        study_name="example-study",
+        storage="mysql+pymysql://root:test@localhost/optunatest",
+        direction="maximize",
+        load_if_exists=True
+    )
     study.optimize(objective, n_trials=n_trials)
     best_params = study.best_params
     logger.info(best_params)

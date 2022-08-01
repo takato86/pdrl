@@ -32,7 +32,7 @@ class Zscorer(Normalizer):
             return clipped_z
         else:
             # torch.Double型に変換されることを防ぐ
-            return torch.as_tensor(clipped_z, dtype=torch.float32, device=device)
+            return torch.as_tensor(clipped_z, dtype=torch.float32, device=device())
 
     def _mean(self):
         return self.sum_obs / self.count_obs

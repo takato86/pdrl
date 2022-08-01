@@ -15,7 +15,7 @@ def mpi_avg_grad(module):
         p.grad = torch.as_tensor(
             p_grad_numpy,
             dtype=torch.float32,
-            device=device
+            device=device()
         )
 
 
@@ -30,5 +30,5 @@ def sync_params(module):
         p.data = torch.as_tensor(
             p_numpy,
             dtype=torch.float32,
-            device=device
+            device=device()
         )
