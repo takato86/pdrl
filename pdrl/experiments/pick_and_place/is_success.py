@@ -10,5 +10,9 @@ def is_success(done, info):
 def is_success4sarsa_rs(done, info):
     # return done
     # if not done:
-    return False
+    return done and bool(info.get("is_success"))
     # return bool(info.get("is_success"))
+
+
+def is_success4dta(done, info):
+    return bool(info.get("is_success"))

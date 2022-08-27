@@ -3,7 +3,7 @@ import shaper
 from shaper.aggregator.subgoal_based import DynamicTrajectoryAggregation
 from pdrl.transform.pipeline import Step
 from pdrl.experiments.pick_and_place.subgoal import subgoal_generator_factory
-from pdrl.experiments.pick_and_place.is_success import is_success, is_success4sarsa_rs
+from pdrl.experiments.pick_and_place.is_success import is_success, is_success4sarsa_rs, is_success4dta
 from pdrl.experiments.pick_and_place.achiever import FetchPickAndPlaceAchiever
 
 
@@ -17,7 +17,7 @@ def create_aggregator(configs):
         subgoals=subgoals,
         **achiever_params
     )
-    aggregator = DynamicTrajectoryAggregation(achiever, is_success)
+    aggregator = DynamicTrajectoryAggregation(achiever, is_success4dta)
     return aggregator
 
 
