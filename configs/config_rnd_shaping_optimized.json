@@ -12,7 +12,7 @@
         "nruns": 1,
         "start_steps": 257,
         "steps_per_epoch": 200,
-        "epochs": 100000,
+        "epochs": 15000,
         "update_after": 256,
         "update_every": 50,
         "max_ep_len": 50
@@ -40,14 +40,7 @@
     "shaping_method": "dta",
     "shaping_params": {
         "gamma": 0.9,
-        "lr": 0.01,
-        "aggr_id": "dta",
-        "vid": "table",
-        "values": {
-            "0": 0.1,
-            "1": 0.3,
-            "2": 0.5
-        }
+        "lr": 0.01
     },
 
     "subgoal_type": "human",
