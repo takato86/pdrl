@@ -30,4 +30,4 @@ class RNDAgent:
         target_feature = self.target(obs_tensor)
         predictor_feature = self.predictor(obs_tensor)
         intrinsic_reward = torch.mean((target_feature - predictor_feature)**2)
-        return intrinsic_reward
+        return intrinsic_reward.detach().cpu().numpy()
