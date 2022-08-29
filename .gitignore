@@ -132,3 +132,4 @@ dmypy.json
 runs/**
 mlruns/**
 configs/batch
+MUJOCO_LOG.txt
