@@ -111,6 +111,13 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
                 batch = replay_buffer.sample_batch(batch_size=batch_size)
                 logger.debug("Got experiences!")
                 bonus = batch.pop("bonus")
+
+                # update rnd
+                rnd_batch = batch["obs"]
+                logger.debug("Updating RND...")
+                rnd_loss = rnd_agent.update(rnd_batch)
+                logger.debug("Updated RND!")
+                
                 batch["rew"] += bonus
                 logger.debug("Normalize observations...")
                 batch["obs"] = normalizer(batch["obs"].cpu()).to(device())
@@ -119,11 +126,6 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
                 logger.debug("Updating...")
                 loss_q, loss_pi, max_q = agent.update(batch)
                 logger.debug("Updated!")
-                # update rnd
-                rnd_batch = batch["obs"]
-                logger.debug("Updating RND...")
-                rnd_loss = rnd_agent.update(rnd_batch)
-                logger.debug("Updated RND!")
 
                 if (basis + j) % steps_per_epoch == 0:
                     n_records = (basis + j) // steps_per_epoch

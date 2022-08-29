@@ -84,7 +84,7 @@ class DynamicShapingReplayBuffer:
         self.basis_rb = ReplayBuffer(obs_dim, act_dim, size)
         self.aobs_buf = np.zeros(size, dtype=np.float32)
         self.aobs2_buf = np.zeros(size, dtype=np.float32)
-        self.shaper, self.size = shaper, size
+        self.shaper = shaper
 
     def store(self, obs, act, rew, next_obs, done, bonus, info):
         self.basis_rb.store(obs, act, rew, next_obs, done, bonus, info)
@@ -97,7 +97,7 @@ class DynamicShapingReplayBuffer:
             self.aobs2_buf[self.basis_rb.ptr] = self.aobs_buf[self.basis_rb.ptr]
 
     def sample_batch(self, batch_size=32):
-        idxs = np.random.randint(0, self.size, size=batch_size)
+        idxs = np.random.randint(0, self.basis_rb.size, size=batch_size)
         shaping = np.zeros(batch_size)
 
         # shapingの報酬値計算
