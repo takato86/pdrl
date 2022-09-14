@@ -15,33 +15,30 @@ logger.setLevel(logging.INFO)
 
 
 def test(test_env, agent, normalizer, pipeline, num_test_episodes, max_ep_len):
-    ep_rets, ep_lens, is_successes, n_subgs = [], [], [], []
+    ep_rets, is_successes, n_subgs = [], [], []
 
     for _ in range(num_test_episodes):
-        f_o, d, rets, is_success, ep_len = test_env.reset(), False, [], False, 0
+        f_o, d, rets, ep_len = test_env.reset(), False, [], 0
         logger.debug("test reset initial obs: {}".format(f_o))
         o, _, _, _, _, _ = pipeline.transform(f_o, None, 0, None, False, None)
 
-        while(not d and (ep_len < max_ep_len) and not is_success):
+        while(not d and (ep_len < max_ep_len)):
             n_o = normalizer(o)
             a = agent.act(n_o, noise_scale=0, epsilon=0)
             f_o2, r, d, info = test_env.step(a)
             o, a, r, o2, d, info = pipeline.transform(f_o, a, r, f_o2, d, info)
             f_o, o = f_o2.copy(), o2.copy()
             rets.append(r)
-            is_success |= bool(info["is_success"])
             ep_len += 1
 
         ep_rets.append(sum(rets))
-        ep_lens.append(ep_len)
-        is_successes.append(is_success)
+        is_successes.append(bool(info["is_success"]))
         n_subgs.append(info["subgoal"])
 
     # logger.info(f"test return: {ep_ret}")
     test_env.reset()
     return {
         "Test/return": mean(ep_rets),
-        "Test/steps": mean(ep_lens),
         "Test/succ_rate": mean(is_successes),
         "Test/n_subgs": mean(n_subgs)
     }

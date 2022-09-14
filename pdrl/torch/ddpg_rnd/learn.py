@@ -137,7 +137,7 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
                         writer.add_scalar("Train/loss_pi", avg_loss_pi, n_records)
                         writer.add_scalar("Train/loss_rnd", avg_rnd_loss, n_records)
 
-                        if type(replay_buffer) == DynamicShapingReplayBuffer:
+                        if type(replay_buffer) == DynamicShapingReplayBuffer and hasattr(replay_buffer.shaper, "vfunc"):
                             values = {str(key): value for key, value in replay_buffer.shaper.vfunc.state_dict().items()}
                             writer.add_scalars("Train/potentials", values, n_records)
 
