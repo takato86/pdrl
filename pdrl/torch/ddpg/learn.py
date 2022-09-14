@@ -83,19 +83,17 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
         f_o = f_o2.copy()
         o = o2.copy()
         ep_len, ep_ret = ep_len + 1, ep_ret + r
-        is_succ |= bool(info["is_success"])
 
         # End of trajectory handling
         if d or (ep_len == max_ep_len):
             # logger.info(ep_len, ep_ret)
             num_episodes += 1
+            is_succ = bool(info["is_success"])
             n_subgs = info["subgoal"]
-            avg_ep_ret, avg_ep_len, avg_is_succ = mpi_avg(ep_ret), mpi_avg(ep_len), mpi_avg(is_succ)
-            avg_subgs = mpi_avg(n_subgs)
+            avg_ep_ret, avg_is_succ, avg_subgs = mpi_avg(ep_ret), mpi_avg(is_succ), mpi_avg(n_subgs)
 
             if proc_id() == 0:
                 writer.add_scalar("Train/return", scalar_value=avg_ep_ret, global_step=num_episodes)
-                writer.add_scalar("Train/steps", scalar_value=avg_ep_len, global_step=num_episodes)
                 writer.add_scalar("Train/succ_rate", scalar_value=avg_is_succ, global_step=num_episodes)
                 writer.add_scalar("Train/n_subgs", scalar_value=avg_subgs, global_step=num_episodes)
 
@@ -108,19 +106,9 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
             basis = (i - update_after) // update_every
             for j in range(update_every):
                 batch = replay_buffer.sample_batch(batch_size=batch_size)
-                logger.debug("obs avg: {}, obs var: {}".format(torch.mean(batch["obs"], 0), torch.var(batch["obs"], 0)))
-                logger.debug("obs2 avg: {}, obs2 var: {}".format(
-                    torch.mean(batch["obs2"], 0), torch.var(batch["obs2"], 0)
-                ))
-                logger.debug("act avg: {}, act var: {}".format(torch.mean(batch["act"], 0), torch.var(batch["act"], 0)))
                 batch["obs"] = normalizer(batch["obs"])
                 batch["obs2"] = normalizer(batch["obs2"])
-                logger.debug("obs avg: {}, obs var: {}".format(torch.mean(batch["obs"], 0), torch.var(batch["obs"], 0)))
-                logger.debug("obs2 avg: {}, obs2 var: {}".format(
-                    torch.mean(batch["obs2"], 0), torch.var(batch["obs2"], 0)
-                ))
                 loss_q, loss_pi, max_q = agent.update(batch)
-                avg_loss_q, avg_loss_pi, avg_max_q = mpi_avg(loss_q), mpi_avg(loss_pi), mpi_avg(max_q)
 
                 if (basis + j) % steps_per_epoch == 0:
                     n_records = (basis + j) // steps_per_epoch
