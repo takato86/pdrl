@@ -1,6 +1,6 @@
 {
     "env_id": "SingleFetchPickAndPlace-v3",
-    "seed": 123,
+    "seed": 1234,
     "alg": "ddpg_rnd",
     "eval_params": {
         "num_test_episodes": 10

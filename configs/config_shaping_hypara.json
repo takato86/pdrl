@@ -7,7 +7,7 @@
         "num_test_episodes": 10
     },
     "hypara_optimization_params": {
-        "n_trials": 25
+        "n_trials": 10
     },
     "training_params": {
         "nruns": 1,

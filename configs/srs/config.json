@@ -1,6 +1,6 @@
 {
     "env_id": "SingleFetchPickAndPlace-v3",
-    "seed": 123,
+    "seed": 1,
     "alg": "ddpg_rnd",
     "eval_params": {
         "num_test_episodes": 10
@@ -37,15 +37,10 @@
     "env_params": {
         "initial_goal_seed": 10
     },
-    "shaping_method": "dta",
+    "shaping_method": "static",
     "shaping_params": {
         "gamma": 0.9,
-        "lr": 0.01,
-        "values": {
-            "0": 1,
-            "1": 2,
-            "2": 3
-        }
+        "eta": 1.0
     },
 
     "subgoal_type": "human",

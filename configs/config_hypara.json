@@ -1,18 +1,19 @@
 {
-    "env_id": "SingleFetchPickAndPlace-v3",
+    "device": "cuda:0",
+    "env_id": "SingleFetchPickAndPlace-v2",
     "seed": 123,
-    "alg": "ddpg_rnd",
+    "alg": "ddpg",
     "eval_params": {
         "num_test_episodes": 10
     },
     "hypara_optimization_params": {
-        "n_trials": 200
+        "n_trials": 15
     },
     "training_params": {
         "nruns": 1,
         "start_steps": 257,
         "steps_per_epoch": 200,
-        "epochs": 400,
+        "epochs": 1500,
         "update_after": 256,
         "update_every": 50,
         "max_ep_len": 50
@@ -21,7 +22,7 @@
         "norm_clip": 5,
         "norm_eps": 0.01,
         "clip_return": 100,
-        "is_pos_return": true
+        "is_pos_return": false
     },
     "env_params": {
         "initial_goal_seed": 10

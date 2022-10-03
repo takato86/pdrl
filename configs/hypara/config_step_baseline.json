@@ -1,4 +1,5 @@
 {
+    "device": "cuda:1",
     "env_id": "SingleFetchPickAndPlace-v2",
     "seed": 123,
     "alg": "ddpg",
@@ -6,27 +7,18 @@
         "num_test_episodes": 10
     },
     "hypara_optimization_params": {
-        "n_trials": 200
+        "n_trials": 15
     },
     "training_params": {
         "nruns": 1,
         "start_steps": 257,
         "steps_per_epoch": 200,
-        "epochs": 20000,
+        "epochs": 1500,
         "update_after": 256,
         "update_every": 50,
         "max_ep_len": 50
     },
     "agent_params": {
-        "gamma": 0.95,
-        "actor_lr": 0.0001,
-        "critic_lr": 0.0001,
-        "polyak": 0.92,
-        "l2_action": 1.0,
-        "replay_size": 100000,
-        "noise_scale": 0.3,
-        "batch_size": 512,
-        "epsilon": 0.1,
         "norm_clip": 5,
         "norm_eps": 0.01,
         "clip_return": 100,
