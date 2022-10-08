@@ -47,6 +47,13 @@ def test(test_env, agent, normalizer, pipeline, num_test_episodes, max_ep_len):
 def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_epoch, start_steps, update_after,
           update_every, num_test_episodes, max_ep_len, gamma, epsilon, actor_lr, critic_lr, polyak, l2_action,
           noise_scale, batch_size, norm_clip, norm_eps, clip_return, is_pos_return, logdir=None, video=False):
+    torch.backends.cudnn.benchmark = True
+    torch.autograd.detect_anomaly = False
+    torch.autograd.set_detect_anomaly = False
+    torch.autograd.profiler.profile = False
+    torch.autograd.profiler.emit_nvtx = False
+    torch.autograd.gradcheck = False
+    torch.autograd.gradgradcheck = False
     env = env_fn()
     test_env = env
 
