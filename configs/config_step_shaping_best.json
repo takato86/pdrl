@@ -1,5 +1,5 @@
 {
-    "env_id": "FetchPickAndPlace-v1",
+    "env_id": "SingleFetchPickAndPlace-v2",
     "seed": 123,
     "alg": "ddpg",
     "eval_params": {
@@ -11,35 +11,34 @@
     "training_params": {
         "nruns": 1,
         "start_steps": 257,
-        "steps_per_epoch": 200,
-        "epochs": 60000,
+        "steps_per_epoch": 1000,
+        "epochs": 30000,
         "update_after": 256,
-        "update_every": 50,
+        "update_every": 250,
         "max_ep_len": 50
     },
     "agent_params": {
-        "gamma": 0.99,
+        "gamma": 0.98,
         "actor_lr": 0.0001,
-        "critic_lr": 0.0001,
+        "critic_lr": 0.001,
         "polyak": 0.92,
-        "l2_action": 1.0,
+        "l2_action": 1.5,
         "replay_size": 100000,
-        "noise_scale": 0.3,
-        "batch_size": 512,
-        "epsilon": 0.1,
+        "noise_scale": 0.01,
+        "batch_size": 128,
+        "epsilon": 0.5,
         "norm_clip": 5,
         "norm_eps": 0.01,
         "clip_return": 100,
         "is_pos_return": false
     },
     "env_params": {
+        "initial_goal_seed": 10
     },
     "shaping_method": "dta",
     "shaping_params": {
-        "gamma": 0.99,
-        "lr": 0.01,
-        "aggr_id": "dta",
-        "vid": "table"
+        "gamma": 0.98,
+        "lr": 0.01
     },
     "subgoal_type": "human",
     "achiever_params": {

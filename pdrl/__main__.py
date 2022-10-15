@@ -63,6 +63,7 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(filename)s %(funcName)s() L%(lineno)d: %(message)s",
         filename="out.log"
     )
-    logger = logging.getLogger()
+    logger = logging.getLogger("pdrl")
+    logger.setLevel(level)
 
     main(configs)

@@ -11,10 +11,10 @@
     "training_params": {
         "nruns": 1,
         "start_steps": 257,
-        "steps_per_epoch": 200,
-        "epochs": 60000,
+        "steps_per_epoch": 1000,
+        "epochs": 30000,
         "update_after": 256,
-        "update_every": 50,
+        "update_every": 250,
         "max_ep_len": 50
     },
     "agent_params": {

@@ -37,12 +37,11 @@ class Zscorer(Normalizer):
             # torch.Double型に変換されることを防ぐ
             return torch.as_tensor(clipped_z, dtype=torch.float32, device=device())
 
+    @torch.no_grad()
     def batch(self, obs_batch: torch.Tensor):
         # torchのまま計算
-        with torch.no_grad():
-            z = (obs_batch - self._mean_torch()) / self._std_torch()
-            clipped_z = torch.clip(z, -self.norm_clip, self.norm_clip)
-
+        z = (obs_batch - self._mean_torch()) / self._std_torch()
+        clipped_z = torch.clip(z, -self.norm_clip, self.norm_clip)
         return clipped_z
 
     def _mean(self):
@@ -60,6 +59,7 @@ class Zscorer(Normalizer):
         norm_eps_arr = np.full_like(std, self.norm_eps**2)
         return np.max([std, norm_eps_arr], axis=0)
 
+    @torch.no_grad()
     def _std_torch(self):
         var = self.sum_sq_obs_torch / self.count_obs_torch - (self.sum_obs_torch / self.count_obs_torch)**2
         var[var < 0] = 0

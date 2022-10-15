@@ -10,8 +10,7 @@ from pdrl.torch.ddpg.replay_memory import DynamicShapingReplayBuffer
 from pdrl.torch.normalizer import Zscorer
 from pdrl.utils.mpi import mpi_avg, num_procs, proc_id
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = logging.getLogger("pdrl")
 
 
 def test(test_env, agent, normalizer, pipeline, num_test_episodes, max_ep_len):
@@ -19,7 +18,6 @@ def test(test_env, agent, normalizer, pipeline, num_test_episodes, max_ep_len):
 
     for _ in range(num_test_episodes):
         f_o, d, rets, ep_len = test_env.reset(), False, [], 0
-        logger.debug("test reset initial obs: {}".format(f_o))
         o, _, _, _, _, _ = pipeline.transform(f_o, None, 0, None, False, None)
 
         while(not d and (ep_len < max_ep_len)):
@@ -64,7 +62,6 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
 
     total_steps = steps_per_epoch * epochs // num_procs()
     f_o, ep_ret, ep_len, total_test_ep_ret, num_episodes, is_succ = env.reset(), 0, 0, 0, 0, False
-    logger.debug("train initial obs: {}".format(f_o))
     o, _, _, _, _, _ = pipeline.transform(f_o, None, 0, None, False, None)
     agent = DDPGAgent(
         o, env.action_space, gamma, actor_lr, critic_lr,
@@ -94,20 +91,13 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
         # End of trajectory handling
         if d or (ep_len == max_ep_len):
             num_episodes += 1
-            # is_succ = bool(info["is_success"])
-            # n_subgs = info["subgoal"]
-            # avg_ep_ret, avg_is_succ, avg_subgs = mpi_avg(ep_ret), mpi_avg(is_succ), mpi_avg(n_subgs)
-
-            # if proc_id() == 0:
-            #     writer.add_scalar("Train/return", scalar_value=avg_ep_ret, global_step=num_episodes)
-            #     writer.add_scalar("Train/succ_rate", scalar_value=avg_is_succ, global_step=num_episodes)
-            #     writer.add_scalar("Train/n_subgs", scalar_value=avg_subgs, global_step=num_episodes)
 
             f_o, ep_ret, ep_len, is_succ = env.reset(), 0, 0, False
             o, _, r, _,  d, _ = pipeline.transform(f_o, None, 0, None, False, None)
 
         # Update handling
         if i >= update_after and i % update_every == 0:
+            logger.debug("LEARNING... at {}".format(proc_id()))
             basis = (i - update_after) // update_every
             for j in range(update_every):
                 batch = replay_buffer.sample_batch(batch_size=batch_size)
@@ -130,9 +120,11 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
                             writer.add_scalars("Train/potentials", values, n_records)
 
             agent.sync_target()
+            logger.debug("FINISH LEARNING! at {}".format(proc_id()))
 
         # End of epoch handling
         if (i+1) % steps_per_epoch == 0:
+            logger.debug("START TESTING... at {}".format(proc_id()))
             epoch = (i+1) // steps_per_epoch
             # logger.info(f"Epoch {epoch}\n-------------------------------")
             # logger.info(f"return: {ep_ret}   [{i:>7d}/{int(total_steps):>7d}]")
@@ -148,6 +140,8 @@ def learn(env_fn, pipeline, test_pipeline, replay_buffer_fn, epochs, steps_per_e
 
                 if key == "Test/return":
                     total_test_ep_ret += score
+            
+            logger.debug("FINISH TESTING! at {}".format(proc_id()))
 
     if proc_id() == 0:
         agent.save(os.path.join(writer.log_dir, "model.pth"))
